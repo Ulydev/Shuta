@@ -10,6 +10,7 @@ function love.conf(t)
   t.modules.audio = false
   t.modules.font = false
   t.modules.video = false
+  t.modules.window = false
 
   t.window = nil
   
