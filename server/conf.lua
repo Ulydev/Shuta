@@ -3,6 +3,7 @@ function love.conf(t)
   t.modules.joystick = false
   t.modules.physics = false
   t.modules.graphics = false
+  t.modules.audio = false
 
   t.window = nil
   
