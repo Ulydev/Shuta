@@ -15,11 +15,13 @@ end
 --TODO: the class name and methods are confusing 
 
 function Class:addTurn(id, turn, force)
-    local el = self.turns[self:getCurrentTurn()]
+    local el = self:getTurn( self:getCurrentTurnIndex() )
 
     if force or not el[id] then --if there already is a turn for that client just skip it - no cheating!
         el[id] = turn
+        return true
     end
+    return false
 end
 
 function Class:getTurn(index)
@@ -30,7 +32,7 @@ function Class:getTurns()
     return self.turns
 end
 
-function Class:getCurrentTurn()
+function Class:getCurrentTurnIndex()
     return #self.turns
 end
 
@@ -46,7 +48,7 @@ end
 
 function Class:isReady()
     --TODO: should turnManager be part of gameState (currently is) or room?
-    return self:getTurnCount( self:getCurrentTurn() ) >= self:getState():getRoom():getSettings().playingClients
+    return self:getTurnCount( self:getCurrentTurnIndex() ) >= self:getState():getRoom():getSettings().playingClients
 end
 
 function Class:getState()

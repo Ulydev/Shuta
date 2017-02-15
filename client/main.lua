@@ -8,8 +8,9 @@ client = true --required
 
 WWIDTH, WHEIGHT = 1920, 1080 --16/9 aspect ratio
 
-debug = true
-remote_debug = false
+debug = true --various debug utils
+remote_debug = false --enables lovebird
+local_debug = false --connects to localhost
 
 --//////////////////////////////////--
 --//-\\-//-[[- INCLUDES -]]-\\-//-\\--

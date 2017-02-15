@@ -91,21 +91,21 @@ local function setDataCallbacks(server)
     server:on("turn", function(turnData, client)
         local index = client:getIndex()
 
-        --DEBUG:
-        log("Turn from client " .. index)
-        pprint(turnData)
-
         --store input
         local room = client.room
         if room then
-            room:getState():getTurns():addTurn(
+            local added = room:getState():getTurns():addTurn(
                 client:getIndex(),
                 Turn:new( turnData ),
                 false --don't force to prevent cheating
             )
+
+            --DEBUG:
+            log("[client " .. index .. "] turn " .. added and "registered" or "skipped")
+
             if room:getState():getTurns():isReady() then --we got all turns!
                 local turns = room:getState():getTurns()
-                server:sendToAllInRoom( room.id, "turnList", turns:serialize(turns:getCurrentTurn()) )
+                server:sendToAllInRoom( room.id, "turnList", turns:serialize(turns:getCurrentTurnIndex()) )
             end
         end
         
