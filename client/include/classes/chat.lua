@@ -33,7 +33,11 @@ function Class:draw()
     
     for i = 1, #self.messages do
         local message = self.messages[i]
-        love.graphics.print(message.text, 10, self.y + self.height - (i-1) * 40 - 6)
+
+        local string = message.text
+        if message.prefix then string = message.prefix .. ": " .. string end
+
+        love.graphics.print(string, 10, self.y + self.height - (i-1) * 40 - 6)
     end
 
     --input bar
@@ -75,8 +79,11 @@ end
 
 --
 
-function Class:addMessage(text)
+function Class:addMessage(id, text)
+    local prefix = (id == 0 and "SERVER") or ( network:getRoom():getClient(id).name .. "(" .. id .. ")" )
+
     table.insert(self.messages, 1, {
+        prefix = prefix,
         text = text
     })
 end

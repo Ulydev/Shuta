@@ -10,6 +10,10 @@ local fixed = {
     rate = 1/30 --default 30fps
 }
 
+function fixed:getRate()
+    return fixed.rate
+end
+
 function fixed:setRate(rate)
     fixed.rate = rate
     return fixed

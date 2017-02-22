@@ -17,8 +17,8 @@ local function setConnectionCallbacks(client)
         state:switch("scenes/connect", msg)
     end)
 
-    client:on("init", function(index) --get initial necessary data
-        network:setLocalIndex(index)
+    client:on("init", function(data) --get initial necessary data
+        network:setLocalData(data)
     end)
 
 end
@@ -40,15 +40,23 @@ local function setRoomCallbacks(client)
 
     client:on("remoteConnect", function(remoteClient)
         network:getRoom():addClient( remoteClient )
+        local name = remoteClient.name or ""
+        love.messagereceived(name .. "(" .. remoteClient.id .. ") has joined the game")
     end)
 
-    client:on("remoteDisconnect", function(remoteClient)
+    client:on("remoteDisconnect", function(remoteClient) --only ID is sent
+        local name
         for i = 1, network:getRoom():getClientCount() do
             if network:getRoom():getClient(i).id == remoteClient.id then
+                name = network:getRoom():getClient(i).name
                 network:getRoom():removeClient(i)
                 break;
             end
         end
+        name = name or ""
+        love.messagereceived(name .. "(" .. remoteClient.id .. ") has left the game")
+
+        --TODO: delete game state if there was a playing client
     end)
 
 end
@@ -56,7 +64,7 @@ end
 local function setDataCallbacks(client)
 
     client:on("message", function(message)
-        state.messagereceived(message)
+        love.messagereceived(message)
     end)
 
     --
@@ -64,7 +72,6 @@ local function setDataCallbacks(client)
     client:on("gameState", function(stateData)
         local started = network:getRoom():getState():hasStarted() --returns false by default
 
-        pprint(stateData)
         network:getRoom():getState():updateData( stateData )
 
         if started ~= network:getRoom():getState():hasStarted() then
@@ -75,8 +82,6 @@ local function setDataCallbacks(client)
     --
 
     client:on("turnList", function(turnList)
-
-        pprint(turnList)
 
         local room = network:getRoom()
         if room then
@@ -90,6 +95,9 @@ local function setDataCallbacks(client)
                 )
             end
             --once every turn is added, simulate state then go to next /round/
+
+            print("Running round")
+            room:getState():nextTurnFrame()
 
         end
         

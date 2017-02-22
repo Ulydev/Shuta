@@ -10,7 +10,7 @@ WWIDTH, WHEIGHT = 1920, 1080 --16/9 aspect ratio
 
 debug = true --various debug utils
 remote_debug = false --enables lovebird
-local_debug = false --connects to localhost
+local_debug = true --connects to localhost
 
 --//////////////////////////////////--
 --//-\\-//-[[- INCLUDES -]]-\\-//-\\--
@@ -72,12 +72,17 @@ StaticObject = sharedclass    "staticobject" --not updated
 
 Character = sharedclass       "character"
 
+Target = sharedclass          "target"
+
 HUD = reqclass                "hud"
 Chat = reqclass               "chat"
 
 TurnManager = sharedclass     "turnmanager"
 Turn = sharedclass            "turn"
 Action = sharedclass          "action"
+
+StateEngine = shared                "engine.state" --global engine
+PhysicsEngine = shared              "engine.physics" --inherits from StateEngine -> custom functions
 
 
 
@@ -110,7 +115,7 @@ push:setupScreen(WWIDTH, WHEIGHT, RWIDTH, RHEIGHT, {
   highdpi = true
 })
 
-fixed:setRate( 1 / 30 ):setFunction(love.fixedupdate) --30 fps
+fixed:setRate( 1 / 30 ):setFunction(function(dt) love.fixedupdate(dt) end) --30 fps
 
 event = lem:new()
 
@@ -158,6 +163,12 @@ function love.update(dt)
   
 end
 
+function love.fixedupdate(dt)
+
+  state:fixedupdate(dt)
+
+end
+
 function love.draw()
   
   push:apply("start")
@@ -178,6 +189,13 @@ end
 function love.keypressed(...) return state.keypressed(...) end
 function love.keyreleased(...) return state.keyreleased(...) end
 function love.textinput(...) return state.textinput(...) end
-function love.fixedupdate(...) return state.fixedupdate(...) end
 function love.mousepressed(...) return state.mousepressed(...) end
 function love.mousereleased(...) return state.mousereleased(...) end
+
+function love.messagereceived(message)
+  if type(message) == "string" then
+    return state.messagereceived({ text = message, sender = 0 }) --id 0 stands for server
+  else
+    return state.messagereceived(message)
+  end
+end

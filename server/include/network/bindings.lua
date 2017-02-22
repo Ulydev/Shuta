@@ -15,6 +15,10 @@ local function addUtilLayer(server)
         return server:sendToClients(clients, event, data)
     end
 
+    function server:sendRoomMessage(roomId, message)
+        return server:sendToAllInRoom(roomId, "message", { text = message, sender = 0}) --id 0 stands for server
+    end
+
 end
 
 local function setConnectionCallbacks(server)
@@ -22,10 +26,20 @@ local function setConnectionCallbacks(server)
     server:on("connect", function(data, client)
         local index = client:getIndex()
 
-        client:send("init", index)
+        local randname = ""
+        for i = 1, math.random(6, 10) do
+            randname = randname .. string.char( math.random(65, 90) )
+        end
+        client.toString = function() --quick, dirty hack
+            return "[" .. client.name .. "(" .. index .. ")]"
+        end
+
+        client.name = randname --TODO: let player choose their own name
+
+        client:send("init", { id = index, name = client.name })
         client:send("roomList", network:getRoomList())
 
-        log("Client " .. index .. " connected")
+        log(client.toString() .. " connected")
     end)
 
     server:on("disconnect", function(data, client)
@@ -41,7 +55,7 @@ local function setConnectionCallbacks(server)
             --then room:checkNewGame()
         end
 
-        log("Client " .. index .. " disconnected")
+        log(client.toString() .. " disconnected")
     end)
 
 end
@@ -61,7 +75,7 @@ local function setDataCallbacks(server)
 
         client:send("leaveRoom", roomId)
 
-        log("Client " .. index .. " left room " .. roomId)
+        log("[#" .. roomId .. "] " .. client.toString() .. " left")
     end)
 
     server:on("joinRoom", function(roomId, client)
@@ -70,12 +84,12 @@ local function setDataCallbacks(server)
         local oldRoom = client.room
         if (oldRoom) then
             oldRoom:removeClient(client)
-            server:sendToAllInRoom(oldRoom.id, "remoteDisconnect", { id = index })
+            server:sendToAllInRoom(oldRoom.id, "remoteDisconnect", { id = index }) --we've already sent name
         end
 
         local room = network:getRoom(roomId)
 
-        server:sendToAllInRoom(roomId, "remoteConnect", { id = index }) --notify everyone of client connection
+        server:sendToAllInRoom(roomId, "remoteConnect", { id = index, name = client.name }) --notify everyone of client connection
         room:addClient(client) --add client to room
 
         --send client initial data
@@ -83,9 +97,9 @@ local function setDataCallbacks(server)
         --if game has started - gameState will be serialized along with joinRoom
         client:send( "joinRoom", room:serialize() )
 
-        room:checkNewGame() --TODO: fix that ugly naming?
+        log("[#" .. roomId .. "] " .. client.toString() .. " joined")
 
-        log("Client " .. index .. " joined room " .. roomId)
+        room:checkNewGame() --TODO: fix that ugly naming?
     end)
 
     server:on("turn", function(turnData, client)
@@ -93,7 +107,7 @@ local function setDataCallbacks(server)
 
         --store input
         local room = client.room
-        if room then
+        if room and room:getState():hasStarted() then
             local added = room:getState():getTurns():addTurn(
                 client:getIndex(),
                 Turn:new( turnData ),
@@ -101,11 +115,18 @@ local function setDataCallbacks(server)
             )
 
             --DEBUG:
-            log("[client " .. index .. "] turn " .. added and "registered" or "skipped")
+            log("[#" .. room.id .. "] " .. client.toString() .. " turn " .. (added and "registered" or "skipped") )
 
             if room:getState():getTurns():isReady() then --we got all turns!
                 local turns = room:getState():getTurns()
                 server:sendToAllInRoom( room.id, "turnList", turns:serialize(turns:getCurrentTurnIndex()) )
+
+                --simulate state
+                room:getState():nextTurnFrame()
+
+                log("[#" .. room.id .. "] Simulating to frame " .. room:getState().targetFrame )
+
+                room:getState():fullUpdate()
             end
         end
         

@@ -9,12 +9,17 @@ end
 
 --localIndex
 
-function Class:setLocalIndex(index)
-    self.localIndex = index
+function Class:setLocalData(data)
+    self.localIndex = data.id or self.localIndex
+    self.localName = data.name or self.localName
 end
 
 function Class:getLocalIndex()
     return self.localIndex
+end
+
+function Class:getLocalName()
+    return self.localName
 end
 
 --roomList

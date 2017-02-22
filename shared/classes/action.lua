@@ -1,6 +1,6 @@
 local Class = class('Action')
 
-function Class:initialize(args) --Turn:new( { type = "move", data = { x = 100, y = 200 } } )
+function Class:initialize(args) --Turn:new( { type = "move", time = 5, data = { x = 100, y = 200 } } )
     self.time = args.time
     self.type = args.type
     self.data = args.data

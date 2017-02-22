@@ -26,7 +26,8 @@ function Class:getClientList()
     for i = 1, #self.clients do --Room.clients is sorted
         local client = self.clients[i]
         table.insert(clients, {
-            id = client:getIndex()
+            id = client:getIndex(),
+            name = client.name
         })
     end
     return clients
@@ -81,10 +82,6 @@ function Class:checkNewGame()
     if self:hasEnoughPlayers() and not self:getState():hasStarted() then
         --if room is ready to start, begin match (sets initial state)
         self:startGame()
-
-        --broadcast initial game state (client position, entities, etc.)
-        --once the client has this state it can simulate the outcome of the game
-        server:sendToAllInRoom(self.id, "gameState", self:getState():serialize("with_map"))
     end
 end
 
@@ -93,6 +90,12 @@ function Class:startGame()
 
     --there are enough players to start game, let's populate state
     gameState:start()
+
+    --broadcast initial game state (client position, entities, etc.)
+    --once the client has this state it can simulate the outcome of the game
+    server:sendToAllInRoom(self.id, "gameState", self:getState():serialize("with_map"))
+
+    log("Game " .. self.id .. " has started")
 end
 
 function Class:stopGame()
@@ -101,6 +104,8 @@ function Class:stopGame()
     gameState:stop()
 
     server:sendToAllInRoom(self.id, "gameState", gameState:serialize())
+
+    log("Game " .. self.id .. " has ended")
 end
 
 --

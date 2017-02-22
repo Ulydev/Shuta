@@ -14,10 +14,14 @@ end
 
 function Class:getRoomList()
     local rooms = {}
-    for id, room in pairs(self.rooms) do
+    for id, room in pairs( self:getRooms() ) do
         table.insert(rooms, room:serializeList())
     end
     return rooms
+end
+
+function Class:getRooms()
+    return self.rooms
 end
 
 function Class:getRoom(roomId)
@@ -25,7 +29,7 @@ function Class:getRoom(roomId)
 end
 
 function Class:getRoomCount() --TODO: check if there are closed rooms (room = nil)
-    return #self.rooms
+    return #self:getRooms()
 end
 
 --

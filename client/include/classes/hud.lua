@@ -27,7 +27,8 @@ function Class:draw()
     for i = 1, #room.clients do
         local client = room.clients[i]
         local me = client.id == network:getLocalIndex()
-        love.graphics.print(client.id .. (me and " <-" or ""), 10, i * 40 + 40)
+        local name = client.name or ""
+        love.graphics.print( name .. "(" .. client.id .. ")" .. (me and " <-" or ""), 10, i * 40 + 40)
     end
 
     self.chat:draw()

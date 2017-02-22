@@ -13,6 +13,19 @@ function Class:initialize(room)
 
     self.turns = TurnManager:new(self)
 
+    self.frame = 0
+    self.targetFrame = 0
+
+    self.engine = PhysicsEngine:new(self) --link physics engine to state
+
+    if client then
+        self.simulation = {
+            objects = {},
+            frame = 0,
+            targetFrame = 0
+        }
+    end
+
     return self
 end
 
@@ -60,9 +73,48 @@ function Class:updateData( stateData )
 
     table.populate(self, stateData)
 end
+
+function Class:draw()
+    local objects = self:getObjects()
+    for i = 1, #objects do
+      local object = objects[i]
+      object:draw()
+    end
+end
 --/CLIENT
 
---COMMON
+function Class:fixedupdate(dt)
+
+    if self:hasStarted() then
+
+        if self.frame < self.targetFrame then
+
+            self.frame = self.frame + 1
+            self.engine:update(dt)
+
+        end
+
+    end
+
+end
+
+--SERVER
+function Class:fullUpdate()
+    while self.frame < self.targetFrame do
+        self:fixedupdate( fixed:getRate() )
+    end
+end
+--
+
+function Class:nextTurnFrame()
+    self.targetFrame = self.targetFrame + self:getRoom():getSettings().turnLength / fixed:getRate() --e.g. 2 * 30 = 60 frames to update
+end
+--TODO: once turn is updated, clear all those fucking turns and prevent it from doing complete bullshit
+
+function Class:getCurrentFrame()
+    return self.frame
+end
+
 function Class:addObject(object)
     table.insert(self.objects, object)
 end
@@ -71,7 +123,7 @@ function Class:removeObject(object)
     table.remove(self.objects, self:getObjectIndex(object))
 end
 
-function Class:getObjectIndex(object)
+function Class:getObjectIndex(object) --TODO: maybe give each object a .id attribute
     for i = 1, self:getObjectCount() do
         if self:getObject(i) == object then
             return i
@@ -82,6 +134,33 @@ end
 function Class:getObjects()
     return self.objects
 end
+
+--Filters
+
+function Class:filterObject(filter)
+    for i = 1, self:getObjectCount() do
+        if filter( self:getObject(i) ) then return self:getObject(i) end
+    end
+    --if not found return nothing
+end
+
+function Class:filterObjects(filter)
+    local objects = {}
+    for i = 1, self:getObjectCount() do
+        if filter( self:getObject(i) ) then table.insert( objects, self:getObject(i) ) end
+    end
+    return objects
+end
+
+--[[
+e.g. to find local player,
+
+state:getObject( state:filterObjects(function(o)
+    return o.class == "Character" and o.id == network:getLocalIndex()
+end)[1] )
+
+TODO: weird
+-—]]
 
 function Class:getObject(index)
     return self.objects[index]
@@ -101,12 +180,6 @@ end
 
 function Class:stop()
     self.started = false
-
-end
-
---
-
-function Class:forward(time) --run the game for *time* seconds
 
 end
 

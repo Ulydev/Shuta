@@ -37,7 +37,11 @@ function Class:getCurrentTurnIndex()
 end
 
 function Class:getTurnCount(roundIndex)
-    return #self.turns[roundIndex]
+    local count = 0
+    for index, turn in pairs( self:getTurn(roundIndex) ) do
+        if turn then count = count + 1 end --we got a turn
+    end
+    return count
 end
 
 function Class:nextTurn()
@@ -48,8 +52,16 @@ end
 
 function Class:isReady()
     --TODO: should turnManager be part of gameState (currently is) or room?
-    return self:getTurnCount( self:getCurrentTurnIndex() ) >= self:getState():getRoom():getSettings().playingClients
+    return self:isTurnFull( self:getCurrentTurnIndex() )
 end
+
+function Class:isTurnFull(roundIndex)
+    local limit = self:getState():getRoom():getSettings().playingClients
+    local count = self:getTurnCount( roundIndex )
+    return count >= limit
+end
+
+--
 
 function Class:getState()
     return self.state

@@ -2,11 +2,18 @@ local Class = class('Turn')
 
 function Class:initialize(args)
     self.actions = {}
+    --[[
+    self.actions = {
+        action1, --each action has a frame attribute
+        action2,
+        ...
+    }
+    --]]
 
     if args then
         if args.actions then --reconstruct from serialized object
-            for index, action in pairs(args.actions) do 
-                self:addAction( Action:new(action) )
+            for i = 1, #args.actions do 
+                self:addAction( Action:new( args.actions[i] ) )
             end
         end
     end
@@ -25,6 +32,17 @@ end
 
 function Class:getAction(index)
     return self.actions[index]
+end
+
+function Class:getActionsAt(time)
+    local actions = {}
+    for i = 1, #self.actions do
+        local action = self.actions[i]
+        if action.time == time then
+            table.insert(actions, action)
+        end
+    end
+    return actions
 end
 
 --

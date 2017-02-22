@@ -9,14 +9,16 @@ function Class:initialize(args)
 
 end
 
-function Class:update(dt)
+function Class:update(dt) --not executed on server
   
-
+  if self.target then self.target:update(dt) end
   
 end
 
 function Class:draw(alpha)
   
+  if self.target then self.target:draw() end
+
   love.graphics.circle("line", self.x, self.y, self.radius)
   
 end
@@ -33,7 +35,7 @@ function Class:serialize()
   return table.merge(
     DynamicObject.serialize(self),
     {
-      id = self:getClient():getIndex()
+      client = { id = self:getClient():getIndex() }
     }
   )
 end

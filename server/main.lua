@@ -8,6 +8,8 @@ local function reqclass(path) return require("include.classes."..path) end
 local function sharedclass(path) return shared("classes."..path) end
 
 --Libraries
+cmd = lib                           "lovecmd"
+
 class = shared                      "lib.middleclass"
 
 fixed = shared                      "lib.fixed"
@@ -51,16 +53,24 @@ DynamicObject = sharedclass         "dynamicobject" --updated by server
 StaticObject = sharedclass          "staticobject" --not updated
 
 Character = sharedclass             "character" --controlled by client
+Target = sharedclass                "target"
+
+
+
+StateEngine = shared                "engine.state" --global engine
+PhysicsEngine = shared              "engine.physics" --inherits from StateEngine -> custom functions
 
 
 
 --
 
-fixed:setRate( 1 / 30 ):setFunction(love.fixedupdate)
+fixed:setRate( 1 / 30 ):setFunction(function(dt) love.fixedupdate(dt) end) --30 fps by default <-> sync client/server
 
+include                             "commands" ( cmd ) --register commands
 --
 
 function love.load()
+    cmd.load()
 
     server = network.init()
 
@@ -70,7 +80,7 @@ function love.load()
 
     log("Ready to operate!")
 
-    --DEBUG FIXME:
+    --DEBUG:
     for i = 1, 3 do
         network:createRoom()
     end
@@ -78,6 +88,8 @@ function love.load()
 end
 
 function love.update(dt)
+    cmd.update()
+
     server:update()
     network:update(dt)
 end

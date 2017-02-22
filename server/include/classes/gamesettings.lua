@@ -16,7 +16,10 @@ end
 function Class:serialize()
     return { --TODO: add every attribute
         maxClients = self.maxClients,
-        playingClients = self.playingClients
+        playingClients = self.playingClients,
+        maxTurns = self.maxTurns,
+        turnLength = self.turnLength,
+        turnTimer = self.turnTimer
     }
 end
 

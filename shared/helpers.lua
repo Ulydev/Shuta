@@ -31,6 +31,5 @@ function table.merge(t1, t2)
     local res = {}
     table.populate(res, t1)
     table.populate(res, t2)
-    pprint(res)
     return res
 end

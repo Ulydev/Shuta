@@ -68,6 +68,8 @@ function scene.draw()
         love.graphics.pop()
     end
 
+    love.graphics.printf( "Connected as " .. (network:getLocalName() or ""), -10, 10, WWIDTH, "right" )
+
 end
 
 function scene.unload()

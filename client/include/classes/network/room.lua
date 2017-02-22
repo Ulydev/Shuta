@@ -2,7 +2,7 @@ local Class = class('Room')
 
 function Class:initialize(roomData)
   
-    table.populate(self, roomData)
+    table.populate(self, roomData) --adds settings etc.
 
     self.state = GameState:new( self )
 
@@ -30,6 +30,10 @@ end
 
 function Class:getState()
     return self.state
+end
+
+function Class:getSettings()
+    return self.settings
 end
 
 --
