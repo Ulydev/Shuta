@@ -20,7 +20,15 @@ end
 function Assets.loadImages()
     local images = {}
 
+    --trail
+    local canvas = love.graphics.newCanvas(64, 64)
+    love.graphics.setCanvas(canvas)
+    love.graphics.setColor(255, 255, 255)
+    love.graphics.circle("fill", canvas:getWidth(), canvas:getHeight() * .5, canvas:getHeight() * .5)
+    love.graphics.setCanvas()
+    images.trail = love.graphics.newImage( canvas:newImageData() )
 
+    --
 
     return images
 end

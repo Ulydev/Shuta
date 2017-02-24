@@ -1,33 +1,25 @@
 local Class = class("GameState")
 
 function Class:initialize(room)
-    
-    self.started = false
-
-    self.objects = {
-        --clients, bullets (dynamic objects) -> dynamic objects
-        --static objects
-    }
 
     self.room = room
 
-    self.turns = TurnManager:new(self)
+    self:reset()
 
-    self.frame = 0
-    self.targetFrame = 0
-
-    self.engine = PhysicsEngine:new(self) --link physics engine to state
-
-    if client then
-        self.simulation = {
-            objects = {},
-            frame = 0,
-            targetFrame = 0
-        }
-    end
+    --TODO: client simulation
 
     return self
 end
+
+function Class:reset()
+    self.started = false
+    self.objects = {}
+    self.turns = TurnManager:new(self)
+    self.frame = 0; self.targetFrame = 0;
+    self.engine = PhysicsEngine:new(self)
+end
+
+--
 
 --SERVER
 function Class:setupMap() --TODO: this is for 2 players only, make it customizable
@@ -74,6 +66,18 @@ function Class:updateData( stateData )
     table.populate(self, stateData)
 end
 
+function Class:update(dt)
+    if self:hasStarted() then
+        local objects = self:getObjects()
+        for i = 1, #objects do
+            local object = objects[i]
+            if object.update then object:update(dt) end
+        end
+
+        self:getTurns():update(dt)
+    end
+end
+
 function Class:draw()
     local objects = self:getObjects()
     for i = 1, #objects do
@@ -83,6 +87,19 @@ function Class:draw()
 end
 --/CLIENT
 
+--update start/end events
+
+if client then
+
+    function Class:onStopRunning()
+        network:getRoom():getState():getTurns():resetTimer()
+        network:getRoom():getState():getTurns():nextTurn()
+    end
+
+end
+
+--
+
 function Class:fixedupdate(dt)
 
     if self:hasStarted() then
@@ -91,6 +108,11 @@ function Class:fixedupdate(dt)
 
             self.frame = self.frame + 1
             self.engine:update(dt)
+
+            if self.frame == self.targetFrame and self.onStopRunning then
+                self:onStopRunning()
+                --client only for now, TODO: if we need server-side callbacks
+            end
 
         end
 
@@ -107,6 +129,9 @@ end
 --
 
 function Class:nextTurnFrame()
+
+    if client then network:getRoom():getState():getTurns():setTimer(0) end
+
     self.targetFrame = self.targetFrame + self:getRoom():getSettings().turnLength / fixed:getRate() --e.g. 2 * 30 = 60 frames to update
 end
 --TODO: once turn is updated, clear all those fucking turns and prevent it from doing complete bullshit
@@ -187,6 +212,9 @@ end
 
 function Class:hasStarted()
     return self.started
+end
+function Class:isRunning()
+    return self.frame < self.targetFrame
 end
 
 --

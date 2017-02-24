@@ -69,7 +69,7 @@ local function setDataCallbacks(server)
 
         local oldRoom = client.room
         if (oldRoom) then
-            network:getRoom(oldRoom.id):removeClien(client)
+            network:getRoom(oldRoom.id):removeClient(client)
             server:sendToAllInRoom(oldRoom.id, "remoteDisconnect", { id = index })
         end
 
@@ -95,39 +95,47 @@ local function setDataCallbacks(server)
         --send client initial data
         --if game hasn't started yet - gameState will be broadcasted when it starts
         --if game has started - gameState will be serialized along with joinRoom
-        client:send( "joinRoom", room:serialize() )
+        client:send( "joinRoom", room:serialize( room:getState():hasStarted() ) )
 
         log("[#" .. roomId .. "] " .. client.toString() .. " joined")
 
         room:checkNewGame() --TODO: fix that ugly naming?
     end)
 
-    server:on("turn", function(turnData, client)
+    server:on("turn", function(turn, client)
+        local turnIndex = turn.id
+        local turnData = turn.data
+
         local index = client:getIndex()
 
         --store input
         local room = client.room
         if room and room:getState():hasStarted() then
-            local added = room:getState():getTurns():addTurn(
-                client:getIndex(),
-                Turn:new( turnData ),
-                false --don't force to prevent cheating
-            )
+            local added
+
+            print(room:getState():getTurns():getCurrentTurnIndex())
+
+            if turnIndex == room:getState():getTurns():getCurrentTurnIndex() then
+                added = room:getState():getTurns():addTurn(
+                    client:getIndex(),
+                    Turn:new( turnData ),
+                    false --don't force to prevent cheating
+                )
+            else
+                --client is trying to send actions from an old turn
+            end
 
             --DEBUG:
             log("[#" .. room.id .. "] " .. client.toString() .. " turn " .. (added and "registered" or "skipped") )
 
-            if room:getState():getTurns():isReady() then --we got all turns!
-                local turns = room:getState():getTurns()
-                server:sendToAllInRoom( room.id, "turnList", turns:serialize(turns:getCurrentTurnIndex()) )
+            if added and room:getState():getTurns():isReady() then --we got all turns!
+                
+                room:getState():getTurns():setTimer(0)
+                --broadcast on next frame
+                --TODO: might need improvement
 
-                --simulate state
-                room:getState():nextTurnFrame()
-
-                log("[#" .. room.id .. "] Simulating to frame " .. room:getState().targetFrame )
-
-                room:getState():fullUpdate()
             end
+
         end
         
     end)

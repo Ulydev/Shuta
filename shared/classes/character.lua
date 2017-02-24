@@ -10,16 +10,20 @@ function Class:initialize(args)
 end
 
 function Class:update(dt) --not executed on server
-  
-  if self.target then self.target:update(dt) end
+  DynamicObject.update(self, dt)
+
+
   
 end
 
 function Class:draw(alpha)
-  
-  if self.target then self.target:draw() end
+  DynamicObject.draw(self, alpha)
 
-  love.graphics.circle("line", self.x, self.y, self.radius)
+  love.graphics.setLineWidth(5)
+  love.graphics.setColor(lue:getColor("back"))
+  love.graphics.circle("fill", self.visual.x, self.visual.y, self.radius)
+  love.graphics.setColor(lue:getColor("main"))
+  love.graphics.circle("line", self.visual.x, self.visual.y, self.radius)
   
 end
 

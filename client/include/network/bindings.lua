@@ -1,9 +1,18 @@
+local function updateData(data)
+    local started = network:getRoom():getState():hasStarted() --returns false by default
+
+    network:getRoom():getState():updateData(data)
+
+    if started ~= network:getRoom():getState():hasStarted() then
+        event:emit("gameStarted")
+    end
+end
+
 local function setConnectionCallbacks(client)
 
     client:on("connect", function()
         print("connected")
         if state:getName(1) == "connect" then --state:getName(1) -> first page of stack
-            print("switching state")
             state:switch("scenes/home")
         end
     end)
@@ -33,7 +42,12 @@ local function setRoomCallbacks(client)
 
     client:on("joinRoom", function(roomData)
         network:setRoom( Room:new( roomData ) )
-        state:switch("scenes/game")
+
+        state:switch("scenes/game") --fixes order issue TODO:
+
+        if roomData.state then
+            updateData( roomData.state )
+        end
     end)
 
     --
@@ -69,15 +83,13 @@ local function setDataCallbacks(client)
 
     --
 
-    client:on("gameState", function(stateData)
-        local started = network:getRoom():getState():hasStarted() --returns false by default
+    client:on("gameState", function(stateData) --updates state
+        print("Received game state")
 
-        network:getRoom():getState():updateData( stateData )
-
-        if started ~= network:getRoom():getState():hasStarted() then
-            event:emit("gameStarted")
-        end
+        updateData( stateData )
     end)
+
+    client:on("resetGameState")
 
     --
 

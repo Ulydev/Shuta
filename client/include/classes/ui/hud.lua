@@ -4,6 +4,8 @@ function Class:initialize()
     
     self.chat = Chat:new()
 
+    self.editor = TurnEditor:new()
+
 end
 
 function Class:update(dt)
@@ -32,6 +34,12 @@ function Class:draw()
     end
 
     self.chat:draw()
+
+    love.graphics.setColor( lue:getColor("main") )
+
+    local time = network:getRoom():getState():getTurns():getTimer()
+    local max = network:getRoom():getSettings().turnTimer
+    love.graphics.circle("fill", WWIDTH*.5, 60, time / max * 50 )
 
 end
 

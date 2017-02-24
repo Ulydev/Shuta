@@ -8,6 +8,12 @@ function Class:initialize(roomData)
 
 end
 
+--update
+
+function Class:update(dt)
+    self:getState():update(dt)
+end
+
 --clients
 
 function Class:addClient(client)

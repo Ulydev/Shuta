@@ -7,6 +7,12 @@ function Class:initialize(args)
 
 end
 
+--update
+
+function Class:update(dt)
+    if self:getRoom() then self:getRoom():update(dt) end
+end
+
 --localIndex
 
 function Class:setLocalData(data)

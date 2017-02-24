@@ -10,14 +10,21 @@ end
 
 function Class:update(dt)
 
-    print("---frame " .. self:getState():getCurrentFrame())
+    --DEBUG:
+    --print("---frame " .. self:getState():getCurrentFrame())
 
     if self.applyAction then
         local turnManager = self:getState():getTurns()
         for index, turn in pairs( turnManager:getTurn( turnManager:getCurrentTurnIndex() ) ) do
-            local actions = turn:getActionsAt( self:getState():getCurrentFrame() )
+            local state = self:getState()
 
-            pprint(actions)
+            local localFrame =
+                state:getCurrentFrame()
+                - ( state:getTurns():getCurrentTurnIndex() - 1 )
+                * ( state:getSettings().turnLength / fixed:getRate() )
+            --TODO: what a fucking mess
+
+            local actions = turn:getActionsAt( localFrame )
             
             for i = 1, #actions do
                 self:applyAction(index, actions[i])

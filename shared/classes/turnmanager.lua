@@ -1,15 +1,23 @@
 local Class = class("TurnManager")
 
+local approxLag = .5 --TODO: move to global settings
+
 function Class:initialize(state)
     
-    self.turns = {
-    }
+    self.turns = {}
 
-    self:nextTurn()
+    self.currentTurnIndex = 0
+    self:nextTurn() --go to first turn
 
     self.state = state
 
+    self:resetTimer( approxLag )
+
     return self
+end
+
+function Class:update(dt)
+    self:updateTimer(dt)
 end
 
 --TODO: the class name and methods are confusing 
@@ -33,7 +41,7 @@ function Class:getTurns()
 end
 
 function Class:getCurrentTurnIndex()
-    return #self.turns
+    return self.currentTurnIndex
 end
 
 function Class:getTurnCount(roundIndex)
@@ -44,8 +52,55 @@ function Class:getTurnCount(roundIndex)
     return count
 end
 
+--timer
+function Class:updateTimer(dt)
+
+    self.time = math.max( self.time - dt, 0 )
+    --on client, just wait for server to broadcast turns
+
+    if server then
+
+        if self.time == 0 then
+
+            --TODO: move code
+            local room = self:getState():getRoom()
+
+            self:resetTimer( room:getSettings().turnLength + approxLag ) --.5 is approx lag
+
+            server:sendToAllInRoom( room.id, "turnList", self:serialize(self:getCurrentTurnIndex()) )
+
+            --set next target frame
+            self:getState():nextTurnFrame()
+
+            log("[#" .. room.id .. "] Simulating to frame " .. self:getState().targetFrame )
+
+            --update state
+            self:getState():fullUpdate()
+
+            self:nextTurn() --once everything has been updated, go to next turn
+
+        end
+
+    end
+end
+function Class:getTimer()
+    return self.time
+end
+function Class:setTimer(time)
+    self.time = time
+end
+function Class:resetTimer(offset)
+    self:setTimer( self.state:getRoom():getSettings().turnTimer + (offset or 0) )
+end
+
+function Class:previousTurn()
+    self.currentTurnIndex = math.max(self.currentTurnIndex - 1, 1)
+end
+
 function Class:nextTurn()
-    table.insert(self.turns, {})
+    self.currentTurnIndex = self.currentTurnIndex + 1
+    local index = self:getCurrentTurnIndex()
+    if not self.turns[index] then self.turns[index] = {} end
 end
 
 --

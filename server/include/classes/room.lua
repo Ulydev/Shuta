@@ -3,8 +3,8 @@ local Class = class("Room")
 function Class:initialize(id, gameSettings)
     self.clients = {} --1...n indexed table
     self.id = id
+    self.settings = GameSettings:new(gameSettings) --load settings first
     self.state = GameState:new(self) --link state to room
-    self.settings = GameSettings:new(gameSettings)
 
     return self
 end
@@ -12,7 +12,7 @@ end
 --
 
 function Class:update(dt)
-
+    self:getState():update(dt)
 end
 
 function Class:fixedupdate(dt)
@@ -120,11 +120,11 @@ end
 
 --
 
-function Class:serialize() --more complete information to send as a whole
+function Class:serialize( full ) --more complete information to send as a whole
     return {
         id = self.id,
         clients = self:getClientList(),
-        state = self:getState():serialize(),
+        state = self:getState():serialize( full ),
         settings = self:getSettings():serialize(),
     }
 end

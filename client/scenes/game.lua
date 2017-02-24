@@ -2,7 +2,24 @@ local game = state:new()
 
 local camera
 local hud
-local player
+
+local player --if playing
+local players --if not playing
+
+local function updateCamera(lerp)
+  local pos = { x = 0, y = 0 }
+  if player then --center camera on player
+      pos = player.visual
+  elseif players then --center camera on avg position
+      for i = 1, #players do
+        pos.x, pos.y = pos.x + players[i].visual.x, pos.y + players[i].visual.y
+      end
+      pos.x, pos.y = pos.x / #players, pos.y / #players
+  end
+  local x, y = camera:getPosition()
+  if not lerp then x, y = pos.x, pos.y end
+  camera:setPosition( math.lerp(x, pos.x, .1), math.lerp(y, pos.y, .1) )
+end
 
 --[[ State ]]--
 
@@ -18,14 +35,21 @@ function game.load(params)
     local started = network:getRoom():getState():hasStarted()
     if started then
 
-
       print("Game has started") 
 
       local gstate = network:getRoom():getState()
-      player = gstate:filterObject(
-        function(o) return ( o.class == "Character" and o.client.id == network:getLocalIndex() ) end
-      )--get local character
-      camera:setPosition(player.x, player.y)
+
+      players = gstate:filterObjects(
+        function(o) return ( o.class == "Character" ) end
+      )
+      for i = 1, #players do
+        if players[i].client.id == network:getLocalIndex() then
+          player = players[i]
+          break;
+        end
+      end
+
+      updateCamera(false)
 
     else
 
@@ -42,8 +66,7 @@ function game.update(dt)
   hud:update(dt)
 
   if network:getRoom():getState():hasStarted() then
-    local x, y = camera:getPosition()
-    camera:setPosition( math.lerp(x, player.x, .1), math.lerp(y, player.y, .1) )
+    updateCamera()
   end
 
 end
@@ -64,10 +87,13 @@ function game.draw()
 
   camera:draw( game.drawCamera )
 
-
   love.graphics.setColor( lue:getColor("main") )
 
   hud:draw() --waiting for players or game started
+
+  local x, y = love.mouse.getPosition()
+  x, y = push:toGame(x, y)
+  if x and y then love.graphics.circle("fill", x, y, 30) end
 
 end
 
@@ -119,10 +145,15 @@ end
 
 function game.mousepressed(x, y, button)
 
+  if not player then return true end --only client-side check, no big deal
+  if network:getRoom():getState():isRunning() then return true end --game is running
+
   x, y = push:toGame(x, y)
   x, y = camera:toWorld(x, y)
 
-  --DEBUG
+  if not x or not y then return true end --push returns nil
+
+  --DEBUG:
   local turn = Turn:new()
   turn:addAction( Action:new({
     time = 1, --first frame
@@ -133,7 +164,10 @@ function game.mousepressed(x, y, button)
     }
   }) )
 
-  client:send( "turn", turn:serialize() )
+  client:send( "turn", {
+    id = network:getRoom():getState():getTurns():getCurrentTurnIndex(),
+    data = turn:serialize()
+  } )
 end
 
 --[[ End ]]--

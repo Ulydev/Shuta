@@ -1,5 +1,4 @@
 io.stdout:setvbuf('no') --fixes print issues
-utf8 = require "utf8"
 client = true --required
 
 --//////////////////////////////////--
@@ -24,6 +23,8 @@ local function reqclass(path) return require("include.classes."..path) end
 local function sharedclass(path) return shared("classes."..path) end
 
 --Libraries
+utf8 = require "utf8"
+
 push = lib                    "push"
 screen = lib                  "shack" --Screen effects (shake, rotate, shear, scale)
 lem = lib                     "lem" --Events
@@ -74,15 +75,17 @@ Character = sharedclass       "character"
 
 Target = sharedclass          "target"
 
-HUD = reqclass                "hud"
-Chat = reqclass               "chat"
-
 TurnManager = sharedclass     "turnmanager"
 Turn = sharedclass            "turn"
 Action = sharedclass          "action"
 
-StateEngine = shared                "engine.state" --global engine
-PhysicsEngine = shared              "engine.physics" --inherits from StateEngine -> custom functions
+StateEngine = shared          "engine.state" --global engine
+PhysicsEngine = shared        "engine.physics" --inherits from StateEngine -> custom functions
+
+--UI components
+HUD = reqclass                "ui.hud"
+Chat = reqclass               "ui.chat"
+TurnEditor = reqclass         "ui.turneditor"
 
 
 
@@ -154,12 +157,17 @@ function love.update(dt)
   screen:update(dt)
   lue:update(dt)
   soft:update(dt)
-  trail:update(dt)
+  --trail:update(dt)
+  --^ update manually for pause effect
   
   state:update(dt)
 
   --fixed timestep
   fixed:update(dt)
+
+  --
+
+  network:update(dt)
   
 end
 
