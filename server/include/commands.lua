@@ -40,7 +40,7 @@ end)
 
 cmd:on( "echo", function(roomId, ...)
     roomId = tonumber(roomId)
-    if roomId < 0 then return true end
+    if not roomId or roomId < 0 then return print("->Wrong syntax") end
 
     local arg = {...}
     local string = ""

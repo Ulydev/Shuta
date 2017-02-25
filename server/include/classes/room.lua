@@ -1,9 +1,10 @@
 local Class = class("Room")
 
-function Class:initialize(id, gameSettings)
+function Class:initialize(args)
     self.clients = {} --1...n indexed table
-    self.id = id
-    self.settings = GameSettings:new(gameSettings) --load settings first
+    self.id = args.id
+    self.name = args.name
+    self.settings = GameSettings:new(args.settings) --load settings first
     self.state = GameState:new(self) --link state to room
 
     return self
@@ -90,10 +91,11 @@ function Class:startGame()
 
     --there are enough players to start game, let's populate state
     gameState:start()
+    --FIXME: state is reset but weird stuff happens when new clients join
 
     --broadcast initial game state (client position, entities, etc.)
     --once the client has this state it can simulate the outcome of the game
-    server:sendToAllInRoom(self.id, "gameState", self:getState():serialize("with_map"))
+    server:sendToAllInRoom(self.id, "gameState", self:getState():serialize( "full" ))
 
     log("Game " .. self.id .. " has started")
 end
@@ -123,6 +125,7 @@ end
 function Class:serialize( full ) --more complete information to send as a whole
     return {
         id = self.id,
+        name = self.name,
         clients = self:getClientList(),
         state = self:getState():serialize( full ),
         settings = self:getSettings():serialize(),
@@ -132,6 +135,7 @@ end
 function Class:serializeList() --minimal information for roomList
     return {
         id = self.id,
+        name = self.name,
         clientCount = self:getClientCount(),
     }
 end

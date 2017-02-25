@@ -1,6 +1,6 @@
 local Class = class('Chat')
 
-function Class:initialize()
+function Class:initialize(hud)
     self.x = 10
     self.y = WHEIGHT-300
     self.width = 300
@@ -12,6 +12,8 @@ function Class:initialize()
 
     self.blinkTime = 0
     self.openTime = 0
+
+    self.hud = hud
 end
 
 function Class:update(dt)
@@ -80,7 +82,17 @@ end
 --
 
 function Class:addMessage(id, text)
-    local prefix = (id == 0 and "SERVER") or ( network:getRoom():getClient(id).name .. "(" .. id .. ")" )
+    local prefix
+    if id == 0 then
+        prefix = "SERVER"
+    else
+        local author = network:getRoom():getClient(id)
+        if not author then
+            prefix = "???" .. "(" .. id .. ")" --FIXME:
+        else
+            prefix = author.name .. "(" .. id .. ")"
+        end
+    end
 
     table.insert(self.messages, 1, {
         prefix = prefix,

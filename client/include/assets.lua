@@ -12,7 +12,9 @@ function Assets.loadFonts()
     local fonts = {}
 
     fonts.small = love.graphics.newFont(p .. "fonts/unilight.ttf", 36)
-    fonts.big = love.graphics.newFont(p .. "fonts/unilight.ttf", 48)
+    fonts.medium = love.graphics.newFont(p .. "fonts/unilight.ttf", 48)
+    fonts.big = love.graphics.newFont(p .. "fonts/unilight.ttf", 64)
+    fonts.title = love.graphics.newFont(p .. "fonts/unilight.ttf", 128)
 
     return fonts
 end

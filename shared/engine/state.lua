@@ -25,7 +25,7 @@ function Class:update(dt)
             --TODO: what a fucking mess
 
             local actions = turn:getActionsAt( localFrame )
-            
+
             for i = 1, #actions do
                 self:applyAction(index, actions[i])
             end

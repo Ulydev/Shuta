@@ -1,5 +1,7 @@
 local game = state:new()
 
+g = {}
+
 local camera
 local hud
 
@@ -28,8 +30,9 @@ function game.load(params)
   hud = HUD:new()
 
   local w, h = WWIDTH * 10, WHEIGHT * 10
-  camera = gamera.new(-w*.5, -h*.5, w, h) --TODO: send game area dimensions server-side
+  camera = gamera.new(-w*.5, -h*.5, w, h) --TODO: send arena dimensions server-side
   camera:setWindow(0, 0, WWIDTH, WHEIGHT)
+  hud.camera = camera
 
   event:on("gameStarted", function()
     local started = network:getRoom():getState():hasStarted()
@@ -49,12 +52,18 @@ function game.load(params)
         end
       end
 
+      hud.editor:setActive(player and true or false)
+
       updateCamera(false)
 
     else
 
       print("Game has ended")
-      --TODO handle state reset
+
+      hud.editor:setActive(false)
+
+      player = nil
+      players = nil
 
     end
   end)
@@ -90,10 +99,6 @@ function game.draw()
   love.graphics.setColor( lue:getColor("main") )
 
   hud:draw() --waiting for players or game started
-
-  local x, y = love.mouse.getPosition()
-  x, y = push:toGame(x, y)
-  if x and y then love.graphics.circle("fill", x, y, 30) end
 
 end
 
@@ -145,29 +150,8 @@ end
 
 function game.mousepressed(x, y, button)
 
-  if not player then return true end --only client-side check, no big deal
-  if network:getRoom():getState():isRunning() then return true end --game is running
+  hud:mousepressed(x, y, button)
 
-  x, y = push:toGame(x, y)
-  x, y = camera:toWorld(x, y)
-
-  if not x or not y then return true end --push returns nil
-
-  --DEBUG:
-  local turn = Turn:new()
-  turn:addAction( Action:new({
-    time = 1, --first frame
-    type = "move",
-    data = {
-      x = x,
-      y = y
-    }
-  }) )
-
-  client:send( "turn", {
-    id = network:getRoom():getState():getTurns():getCurrentTurnIndex(),
-    data = turn:serialize()
-  } )
 end
 
 --[[ End ]]--

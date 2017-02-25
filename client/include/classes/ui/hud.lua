@@ -2,15 +2,17 @@ local Class = class('HUD')
 
 function Class:initialize()
     
-    self.chat = Chat:new()
+    self.chat = Chat:new(self)
 
-    self.editor = TurnEditor:new()
+    self.editor = TurnEditor:new(self)
 
 end
 
 function Class:update(dt)
 
     self.chat:update(dt)
+
+    self.editor:update(dt)
 
 end
 
@@ -20,8 +22,8 @@ function Class:draw()
 
     love.graphics.setFont(fonts.small)
     love.graphics.print("Connected to room " .. room.id, 10, 10)
-    if #room.clients < room.settings.playingClients then
-        love.graphics.setFont(fonts.big)
+    if #room.clients < room:getSettings().playingClients then
+        love.graphics.setFont(fonts.medium)
         love.graphics.printf("Waiting for other players", 0, WHEIGHT*.5 - 48, WWIDTH, "center")
     end
 
@@ -35,12 +37,12 @@ function Class:draw()
 
     self.chat:draw()
 
-    love.graphics.setColor( lue:getColor("main") )
+    self.editor:draw()
 
-    local time = network:getRoom():getState():getTurns():getTimer()
-    local max = network:getRoom():getSettings().turnTimer
-    love.graphics.circle("fill", WWIDTH*.5, 60, time / max * 50 )
+end
 
+function Class:mousepressed(...)
+    self.editor:mousepressed(...) --TODO:
 end
 
 --

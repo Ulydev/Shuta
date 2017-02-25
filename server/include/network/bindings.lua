@@ -1,3 +1,25 @@
+local function leaveRoom(client)
+    local index = client:getIndex()
+
+    local room = client.room
+    if (room) then
+        network:getRoom(room.id):removeClient(client)
+        server:sendToAllInRoom(room.id, "remoteDisconnect", { id = index })
+
+        log("[#" .. room.id .. "] " .. client.toString() .. " left")
+
+        if room:getState():filterObject(function(o)
+            return (o.class == "Character" and o.client.id == index)
+        end) then
+            --client was playing, let's reset state and check for new game
+            room:getState():reset()
+            room:checkNewGame()
+        end
+    end
+end
+
+--
+
 local function addUtilLayer(server)
 
     --layer on top of sock.lua
@@ -23,6 +45,8 @@ end
 
 local function setConnectionCallbacks(server)
 
+    --global
+
     server:on("connect", function(data, client)
         local index = client:getIndex()
 
@@ -37,54 +61,28 @@ local function setConnectionCallbacks(server)
         client.name = randname --TODO: let player choose their own name
 
         client:send("init", { id = index, name = client.name })
-        client:send("roomList", network:getRoomList())
 
         log(client.toString() .. " connected")
     end)
 
     server:on("disconnect", function(data, client)
-        local index = client:getIndex()
-
-        local room = client.room
-        if (room) then --first remove client from room...
-            network:getRoom(room.id):removeClient(client) --at this point client.room is being nil'ed
-
-            server:sendToAllInRoom(room.id, "remoteDisconnect", { id = index }) --notify other clients
-
-            --TODO: if client was playing then room:stopGame()
-            --then room:checkNewGame()
-        end
-
+        leaveRoom(client) --when quitting, process doesn't have time to send "leaveRoom"
         log(client.toString() .. " disconnected")
     end)
-
-end
-
-local function setDataCallbacks(server)
-
-    --TODO: remove redundant code
-
-    server:on("leaveRoom", function(roomId, client)
-        local index = client:getIndex()
-
-        local oldRoom = client.room
-        if (oldRoom) then
-            network:getRoom(oldRoom.id):removeClient(client)
-            server:sendToAllInRoom(oldRoom.id, "remoteDisconnect", { id = index })
-        end
-
-        client:send("leaveRoom", roomId)
-
-        log("[#" .. roomId .. "] " .. client.toString() .. " left")
-    end)
+   
+    --room
 
     server:on("joinRoom", function(roomId, client)
         local index = client:getIndex()
 
+        if not roomId then roomId = 1 end
+        --^ TODO: quick play redirects to room #1 for now
+
         local oldRoom = client.room
         if (oldRoom) then
             oldRoom:removeClient(client)
-            server:sendToAllInRoom(oldRoom.id, "remoteDisconnect", { id = index }) --we've already sent name
+            server:sendToAllInRoom(oldRoom.id, "remoteDisconnect", { id = index })
+            --^ every client should already have a list of names
         end
 
         local room = network:getRoom(roomId)
@@ -100,6 +98,18 @@ local function setDataCallbacks(server)
         log("[#" .. roomId .. "] " .. client.toString() .. " joined")
 
         room:checkNewGame() --TODO: fix that ugly naming?
+    end)
+
+    server:on("leaveRoom", function(data, client) --data isn't used for now
+        leaveRoom(client)
+    end)
+
+end
+
+local function setDataCallbacks(server)
+
+    server:on("roomList", function(data, client)
+        client:send("roomList", network:getRoomList())
     end)
 
     server:on("turn", function(turn, client)

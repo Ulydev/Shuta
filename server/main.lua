@@ -1,6 +1,8 @@
+version = "0.0.1"
 server = true --required
 
-shared = require "./../shared.require"
+local sharedpath = require("sharedpath")
+function shared(path) return require(sharedpath .. path) end
 
 local function lib(path) return require("lib."..path) end
 local function include(path) return require("include."..path) end
@@ -82,7 +84,11 @@ function love.load()
 
     --DEBUG:
     for i = 1, 3 do
-        network:createRoom()
+        local name
+        if i == 1 then name = "Regular" end
+        if i == 2 then name = "Fast-paced" end
+        if i == 3 then name = "Slow-paced" end
+        network:createRoom({ name = name })
     end
   
 end

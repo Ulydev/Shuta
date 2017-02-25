@@ -3,37 +3,41 @@ scene.name = "home"
 
 --[[ State ]]--
 
-buttons = {
-    {
-        label = "Join Server",
-        x = 100,
-        y = 100,
-        scale = 1,
+local buttons = {
+    Button:new({ --TODO: UI manager / button manager
+        text = "Quick Play",
+        x = WWIDTH*.5,
+        y = WHEIGHT*.5 - 100,
+        width = 600,
+        height = 160,
+        font = fonts.big,
+        action = function ()
+            client:send("joinRoom")
+        end
+    }),
+    Button:new({
+        text = "Room List",
+        x = WWIDTH*.5,
+        y = WHEIGHT*.5 + 100,
+        width = 600,
+        height = 160,
+        font = fonts.big,
         action = function ()
             state:push("scenes/overlays/roomlist", {})
         end
-    },
-    {
-        label = "Test",
-        x = 100,
-        y = 250,
-        scale = 1,
+    }),
+    Button:new({
+        text = "Quit",
+        x = WWIDTH*.5,
+        y = WHEIGHT*.5 + 300,
+        width = 600,
+        height = 160,
+        font = fonts.big,
         action = function ()
-            print("It works!")
+            love.event.push("quit")
         end
-    },
-    {
-        label = "Another Test",
-        x = 100,
-        y = 400,
-        scale = 1,
-        action = function ()
-            print("ok")
-        end
-    }
+    })
 }
-
-selection = 1
 
 --
 
@@ -43,11 +47,8 @@ end
 
 function scene.update(dt)
 
-    --no need to take dt into account if it's not critical to gameplay
     for i = 1, #buttons do
-        local button = buttons[i]
-        local selected = i == selection
-        button.scale = math.lerp(button.scale, selected and 1.6 or 1, .4)
+        buttons[i]:update(dt)
     end
 
 end
@@ -59,16 +60,18 @@ function scene.draw()
 
     love.graphics.setColor( lue:getColor("main") )
     for i = 1, #buttons do
-        local button = buttons[i]
-        love.graphics.push()
-        love.graphics.translate(button.x, button.y + 20)
-        love.graphics.scale(button.scale)
-        love.graphics.translate(-button.x, -(button.y + 20))
-        love.graphics.print(button.label, button.x, button.y)
-        love.graphics.pop()
+        buttons[i]:draw()
     end
 
-    love.graphics.printf( "Connected as " .. (network:getLocalName() or ""), -10, 10, WWIDTH, "right" )
+    love.graphics.setFont( fonts.medium )
+    love.graphics.setColor( lue:getColor("mid") )
+    love.graphics.printf( "Connected as " .. (network:getLocalName() or "") .. "\nv" .. version, -10, 10, WWIDTH, "right" )
+
+    local offset = math.cos( love.timer.getTime() * 1 )
+
+    love.graphics.setFont( fonts.title )
+    love.graphics.setColor( lue:getColor("main") )
+    love.graphics.printf( "Untitled", 0, 100 + offset * 20, WWIDTH, "center" )
 
 end
 
@@ -80,13 +83,18 @@ end
 
 --[[ External ]]--
 
+function scene.mousepressed(x, y, button)
+
+    for i = 1, #buttons do
+        buttons[i]:mousepressed(x, y, button)
+    end
+
+end
+
 function scene.keypressed(key, scancode, isrepeat)
 
-    local dir = key == "up" and -1 or key == "down" and 1 or 0
-    selection = (selection + dir - 1) % #buttons + 1
-
-    if key == "space" then
-        buttons[selection].action()
+    if key == "p" then --DEBUG:
+        client:send("joinRoom") --quick play
     end
   
 end

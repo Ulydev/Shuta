@@ -59,7 +59,9 @@ local function setRoomCallbacks(client)
     end)
 
     client:on("remoteDisconnect", function(remoteClient) --only ID is sent
+
         local name
+
         for i = 1, network:getRoom():getClientCount() do
             if network:getRoom():getClient(i).id == remoteClient.id then
                 name = network:getRoom():getClient(i).name
@@ -70,7 +72,15 @@ local function setRoomCallbacks(client)
         name = name or ""
         love.messagereceived(name .. "(" .. remoteClient.id .. ") has left the game")
 
-        --TODO: delete game state if there was a playing client
+        if network:getRoom():getState():filterObject(function(o)
+            return (o.class == "Character" and o.client.id == remoteClient.id)
+        end) then
+
+            network:getRoom():getState():reset()
+            event:emit("gameStarted") --hasStarted is false
+
+        end
+
     end)
 
 end
@@ -88,8 +98,6 @@ local function setDataCallbacks(client)
 
         updateData( stateData )
     end)
-
-    client:on("resetGameState")
 
     --
 

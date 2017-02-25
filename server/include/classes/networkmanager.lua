@@ -6,8 +6,9 @@ function Class:initialize()
   return self
 end
 
-function Class:createRoom(settings)
-    local room = Room:new( self:getRoomCount() + 1, settings )
+function Class:createRoom(args)
+    args.id = self:getRoomCount() + 1
+    local room = Room:new( args )
     self.rooms[room.id] = room
     return room.id
 end

@@ -117,7 +117,19 @@ end
 
 function lue:getColor(name, target)
   
-  return self.c[name] and self.c[name]:getColor(target) or false
+  if not self.c[name] then return false end
+
+  if target then
+    if type(target) == "number" then
+      local color = self.c[name]:getColor()
+      color[4] = target
+      return color
+    else
+      return self.c[name]:getColor( true ) --get target color, not actual one
+    end
+  else
+    return self.c[name]:getColor()
+  end
   
 end
 

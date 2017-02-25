@@ -83,7 +83,7 @@ end
 function stager:update(dt)
 
   for i = #self.stack, 1, -1 do
-    if self.stack[i].update then self.stack[i].update(dt) end
+    if self.stack[i].update then if self.stack[i].update(dt) then break end end
   end
 
   for i = #self._stack, 1, -1 do

@@ -8,28 +8,50 @@ local selection = 1
 
 function scene.load(params)
 
-  
+  --request room list
+  client:send("roomList")
   
 end
 
 function scene.update(dt)
 
-  time = math.to(time, scene.remove and 0 or 1, dt * 4)
+  time = math.to(time, scene.remove and 0 or 1, dt * 8)
+
+  return true
 
 end
 
 function scene.draw()
 
-  local time = ease("sin", time)
+  love.graphics.setColor( lue:getColor("back") )
+  love.graphics.rectangle("fill", 0, 0, WWIDTH, WHEIGHT)
 
-  love.graphics.push()
-  love.graphics.translate((1 - time) * WWIDTH, 0)
+  --
 
   local roomList = network:getRoomList()
 
-  for i = 1, #roomList do
-    local room = roomList[i]
-    love.graphics.printf("Room #" .. room.id .. " " .. room.clientCount, 0, WHEIGHT * ((i-1) / #roomList), WWIDTH, "center")
+  local time = ease("cubicout", time)
+
+  love.graphics.push()
+  --love.graphics.translate((1 - time) * WWIDTH, 0)
+
+  if roomList then
+  
+      love.graphics.setFont( fonts.medium )
+      love.graphics.setColor( lue:getColor("main") )
+
+      for i = 1, #roomList do
+        local room = roomList[i]
+        love.graphics.printf(room.name, 0, WHEIGHT * ((i-1) / #roomList), WWIDTH, "center")
+      end
+
+  else
+
+    --[[
+      love.graphics.setColor( lue:getColor("mid", time * 200) )
+      love.graphics.printf("Fetching room list", 0, WHEIGHT*.5, WWIDTH, "center")
+    --]]
+
   end
 
   love.graphics.pop()
@@ -46,12 +68,16 @@ end
 
 function scene.keypressed(key, scancode, isrepeat)
 
-  if key == "escape" then state:pop() end
-
-  if key == "space" then client:send("joinRoom", 1) end
-
   return true --block propagation
   
+end
+
+function scene.mousepressed(x, y, button)
+
+
+
+  return true
+
 end
 
 --[[ End ]]--

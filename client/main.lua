@@ -1,5 +1,7 @@
-io.stdout:setvbuf('no') --fixes print issues
+version = "0.0.1"
 client = true --required
+
+io.stdout:setvbuf('no') --fixes print issues
 
 --//////////////////////////////////--
 --//-\\-//-[[- SETTINGS -]]-\\-//-\\--
@@ -15,12 +17,13 @@ local_debug = true --connects to localhost
 --//-\\-//-[[- INCLUDES -]]-\\-//-\\--
 --\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\--
 
-local shared = require "./../shared.require"
+local sharedpath = require("sharedpath")
+local function shared(path) return require(sharedpath .. path) end
 
-local function lib(path) return require("lib."..path) end
-local function include(path) return require("include."..path) end
-local function reqclass(path) return require("include.classes."..path) end
-local function sharedclass(path) return shared("classes."..path) end
+local function lib(path) return require("lib." .. path) end
+local function include(path) return require("include." .. path) end
+local function reqclass(path) return require("include.classes." .. path) end
+local function sharedclass(path) return shared("classes." .. path) end
 
 --Libraries
 utf8 = require "utf8"
@@ -87,6 +90,8 @@ HUD = reqclass                "ui.hud"
 Chat = reqclass               "ui.chat"
 TurnEditor = reqclass         "ui.turneditor"
 
+Button = reqclass             "ui.button"
+
 
 
 --Debug
@@ -132,9 +137,12 @@ function love.load()
   fonts, images, sounds = Assets.load()
   love.graphics.setFont(fonts.small)
 
-  --lib config
+  --colors
   lue:setColor("main", { 200, 0, 0 })
   lue:setColor("back", { 255, 255, 255 })
+  lue:setColor("mid", { 100, 100, 100, 100 })
+
+  --transitions
   ease:add("sin", "math.sin(x * math.pi / 2)")
 
   --create client
@@ -197,7 +205,13 @@ end
 function love.keypressed(...) return state.keypressed(...) end
 function love.keyreleased(...) return state.keyreleased(...) end
 function love.textinput(...) return state.textinput(...) end
-function love.mousepressed(...) return state.mousepressed(...) end
+
+function love.mousepressed(x, y, button)
+  x, y = push:toGame(x, y)
+  if not (x and y) then return true end
+
+  return state.mousepressed(x, y, button)
+end
 function love.mousereleased(...) return state.mousereleased(...) end
 
 function love.messagereceived(message)
@@ -206,4 +220,14 @@ function love.messagereceived(message)
   else
     return state.messagereceived(message)
   end
+end
+
+--FIXME: quick hack
+local oldpos, mx, my = love.mouse.getPosition, 0, 0
+function love.mouse.getPosition()
+  local x, y = oldpos()
+  x, y = push:toGame(x, y)
+  if not (x and y) then return mx, my end
+  mx, my = x, y
+  return x, y
 end
