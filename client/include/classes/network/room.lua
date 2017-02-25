@@ -17,11 +17,18 @@ end
 --clients
 
 function Class:addClient(client)
-    table.insert(self.clients, client)
+    table.insert( self.clients, client )
 end
 
 function Class:removeClient(index)
-    table.remove(self.clients, index)
+    table.remove( self.clients, index )
+end
+
+function Class:filterClient(filter)
+    for i = 1, self:getClientCount() do
+        if filter( self:getClient(i) ) then return self:getClient(i) end
+    end
+    --if not found return nothing
 end
 
 function Class:getClientCount()

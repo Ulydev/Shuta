@@ -119,6 +119,8 @@ local function setDataCallbacks(client)
             print("Running round")
             room:getState():nextTurnFrame()
 
+            sounds.ui.confirm2:play() --TODO: place elsewhere
+
         end
         
     end)

@@ -28,8 +28,8 @@ function Class:draw()
     end
 
     love.graphics.setFont(fonts.small)
-    for i = 1, #room.clients do
-        local client = room.clients[i]
+    for i = 1, room:getClientCount() do
+        local client = room:getClient( i )
         local me = client.id == network:getLocalIndex()
         local name = client.name or ""
         love.graphics.print( name .. "(" .. client.id .. ")" .. (me and " <-" or ""), 10, i * 40 + 40)

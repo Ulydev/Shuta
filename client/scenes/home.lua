@@ -71,7 +71,7 @@ function scene.draw()
 
     love.graphics.setFont( fonts.title )
     love.graphics.setColor( lue:getColor("main") )
-    love.graphics.printf( "Untitled", 0, 100 + offset * 20, WWIDTH, "center" )
+    love.graphics.printf( "Shuta", 0, 100 + offset * 20, WWIDTH, "center" )
 
 end
 

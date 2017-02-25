@@ -10,6 +10,10 @@ function scene.load(params)
 
   --request room list
   client:send("roomList")
+
+  event:on("roomList", function()
+    local roomList = 
+  end)
   
 end
 

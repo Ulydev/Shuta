@@ -14,7 +14,7 @@ function Assets.loadFonts()
     fonts.small = love.graphics.newFont(p .. "fonts/unilight.ttf", 36)
     fonts.medium = love.graphics.newFont(p .. "fonts/unilight.ttf", 48)
     fonts.big = love.graphics.newFont(p .. "fonts/unilight.ttf", 64)
-    fonts.title = love.graphics.newFont(p .. "fonts/unilight.ttf", 128)
+    fonts.title = love.graphics.newFont(p .. "fonts/unibold.ttf", 128)
 
     return fonts
 end
@@ -36,11 +36,31 @@ function Assets.loadImages()
 end
 
 function Assets.loadSounds()
-    local sounds = {}
+    local sounds = { ui = {} }
+
+    sounds.ui.confirm1 = audio:newSource(p .. "sounds/ui/confirm1.wav", "static")
+    sounds.ui.confirm2 = audio:newSource(p .. "sounds/ui/confirm2.wav", "static")
 
 
 
     return sounds
+end
+
+--
+
+function Assets.setVolume(volume, table)
+    local table = table or sounds
+    for k, v in pairs(table) do
+        if v.volume then
+            v:setVolume(volume)
+        elseif type(v) == "table" then --keep searching
+            Assets.setVolume(volume, v)
+        end
+    end
+    Assets.volume = volume
+end
+function Assets.getVolume(volume)
+    return Assets.volume
 end
 
 return Assets

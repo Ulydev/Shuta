@@ -9,16 +9,24 @@ io.stdout:setvbuf('no') --fixes print issues
 
 WWIDTH, WHEIGHT = 1920, 1080 --16/9 aspect ratio
 
-debug = true --various debug utils
+debug = false --various debug utils
 remote_debug = false --enables lovebird
-local_debug = true --connects to localhost
+local_debug = false --connects to localhost
+nosound_debug = false --set volume to 0 from start
+
+for i = 2, 5 do
+  if arg[i] == "-debug" then debug = true end
+  if arg[i] == "-remote" then remote_debug = true end
+  if arg[i] == "-local" then local_debug = true end
+  if arg[i] == "-nosound" then nosound_debug = true end
+end
 
 --//////////////////////////////////--
 --//-\\-//-[[- INCLUDES -]]-\\-//-\\--
 --\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\--
 
 local sharedpath = require("sharedpath")
-local function shared(path) return require(sharedpath .. path) end
+function shared(path) return require(sharedpath .. path) end
 
 local function lib(path) return require("lib." .. path) end
 local function include(path) return require("include." .. path) end
@@ -135,6 +143,13 @@ function love.load()
 
   --load assets
   fonts, images, sounds = Assets.load()
+
+  if nosound_debug then
+    Assets.setVolume(0)
+  else
+    Assets.setVolume(.5)
+  end
+
   love.graphics.setFont(fonts.small)
 
   --colors

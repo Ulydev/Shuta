@@ -94,6 +94,7 @@ if client then
     function Class:onStopRunning()
         network:getRoom():getState():getTurns():resetTimer()
         network:getRoom():getState():getTurns():nextTurn()
+        g.hud.editor:resetTurn()
     end
 
 end

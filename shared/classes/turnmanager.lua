@@ -1,6 +1,6 @@
 local Class = class("TurnManager")
 
-local approxLag = .5 --TODO: move to global settings
+local approxLag = server and 4 or 0 --TODO: move to global settings
 
 function Class:initialize(state)
     
@@ -67,6 +67,9 @@ function Class:updateTimer(dt)
 
             self:resetTimer( room:getSettings().turnLength + approxLag ) --.5 is approx lag
 
+            --make sure everyone has a turn, even empty
+            self:fillTurn()
+
             server:sendToAllInRoom( room.id, "turnList", self:serialize(self:getCurrentTurnIndex()) )
 
             --set next target frame
@@ -110,9 +113,24 @@ function Class:isReady()
     return self:isTurnFull( self:getCurrentTurnIndex() )
 end
 
-function Class:isTurnFull(roundIndex)
+function Class:fillTurn(turnIndex)
+    local turnIndex = turnIndex or self:getCurrentTurnIndex()
+    local players = self:getState():filterObjects(function(o)
+        return (o.class == "Character")
+    end)
+    for i = 1, #players do
+        local id = players[i].client.id or players[i].client:getIndex()
+        self:addTurn(
+            id,
+            Turn:new(),
+            false --don't force, just fill empty ones
+        )
+    end
+end
+
+function Class:isTurnFull(turnIndex)
     local limit = self:getState():getRoom():getSettings().playingClients
-    local count = self:getTurnCount( roundIndex )
+    local count = self:getTurnCount( turnIndex )
     return count >= limit
 end
 

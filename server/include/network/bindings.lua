@@ -9,7 +9,7 @@ local function leaveRoom(client)
         log("[#" .. room.id .. "] " .. client.toString() .. " left")
 
         if room:getState():filterObject(function(o)
-            return (o.class == "Character" and o.client.id == index)
+            return (o.class == "Character" and o.client:getIndex() == index)
         end) then
             --client was playing, let's reset state and check for new game
             room:getState():reset()
@@ -123,16 +123,12 @@ local function setDataCallbacks(server)
         if room and room:getState():hasStarted() then
             local added
 
-            print(room:getState():getTurns():getCurrentTurnIndex())
-
             if turnIndex == room:getState():getTurns():getCurrentTurnIndex() then
                 added = room:getState():getTurns():addTurn(
                     client:getIndex(),
                     Turn:new( turnData ),
                     false --don't force to prevent cheating
                 )
-            else
-                --client is trying to send actions from an old turn
             end
 
             --DEBUG:

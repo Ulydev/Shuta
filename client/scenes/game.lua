@@ -28,11 +28,12 @@ end
 function game.load(params)
 
   hud = HUD:new()
+  g.hud = hud
 
   local w, h = WWIDTH * 10, WHEIGHT * 10
   camera = gamera.new(-w*.5, -h*.5, w, h) --TODO: send arena dimensions server-side
   camera:setWindow(0, 0, WWIDTH, WHEIGHT)
-  hud.camera = camera
+  g.camera = camera
 
   event:on("gameStarted", function()
     local started = network:getRoom():getState():hasStarted()
@@ -75,7 +76,7 @@ function game.update(dt)
   hud:update(dt)
 
   if network:getRoom():getState():hasStarted() then
-    updateCamera()
+    updateCamera(true)
   end
 
 end
@@ -124,13 +125,17 @@ end
 function game.keypressed(key, scancode, isrepeat)
 
   local chat = hud.chat
+  local editor = hud.editor
+
   if key == "backspace" then
     chat:removeInput(1) --remove 1 character
   elseif key == "return" then
     chat:sendInput()
     chat:toggleInput()
-  elseif key == "espace" then
+  elseif key == "escape" then
     chat:toggleInput()
+  elseif key == "space" then
+    editor:sendTurn()
   end
   
 end
