@@ -1,25 +1,32 @@
-local Class = class('Character', DynamicObject)
+local Class = class('Bullet', DynamicObject)
 
 function Class:initialize(args)
 
-    args.radius = 20
-    args.speed = 500
+  args.radius = 5
+  args.speed = args.speed or 800
 
-    --
+  --
 
-    DynamicObject.initialize(self, args)
+  DynamicObject.initialize(self, args)
+  if self.trail then self.trail:setWidth( self.radius ) end --FIXME: ugly
 
-    self.client = args.client --server only, pass just client ID to other clients (not entire table)
+  if args.angle then
+    self.velocity = {
+        x = math.cos(args.angle) * self.speed,
+        y = math.sin(args.angle) * self.speed
+    }
+  end
+
+  self.client = args.client
+  self.class = "Bullet"
   
-    self.class = "Character"
-
 end
 
-function Class:update(dt) --not executed on server
+function Class:update(dt)
   DynamicObject.update(self, dt)
-
-
   
+  --DO NOT FORGET TO PUT PARENT METHODS /!\
+
 end
 
 function Class:draw(alpha)
@@ -35,17 +42,11 @@ end
 
 --
 
-function Class:getClient()
-    return self.client
-end
-
---
-
 function Class:serialize()
   return table.merge(
     DynamicObject.serialize(self),
     {
-      client = { id = self:getClient():getIndex() }
+      client = { id = self.client:getIndex() }
     }
   )
 end

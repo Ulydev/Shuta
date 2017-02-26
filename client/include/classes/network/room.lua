@@ -4,7 +4,7 @@ function Class:initialize(roomData)
   
     table.populate(self, roomData) --adds settings etc.
 
-    self.state = GameState:new( self )
+    self.state = GameState:new({ room = self, engineType = roomData.state and roomData.state.engineType })
 
 end
 
@@ -43,6 +43,10 @@ end
 
 function Class:getState()
     return self.state
+end
+
+function Class:getSimulation()
+    return self.simulation
 end
 
 function Class:getSettings()

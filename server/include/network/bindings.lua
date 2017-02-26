@@ -75,8 +75,8 @@ local function setConnectionCallbacks(server)
     server:on("joinRoom", function(roomId, client)
         local index = client:getIndex()
 
-        if not roomId then roomId = 1 end
-        --^ TODO: quick play redirects to room #1 for now
+        if not roomId then roomId = 2 end
+        --^ TODO: quick play redirects to room #2 for now (fast-paced)
 
         local oldRoom = client.room
         if (oldRoom) then

@@ -5,15 +5,27 @@ Assets.path = "assets/"
 local p = Assets.path
 
 function Assets.load()
-    return Assets.loadFonts(), Assets.loadImages(), Assets.loadSounds()
+    Assets.fonts = Assets.loadFonts()
+    Assets.images = Assets.loadImages()
+    Assets.sounds = Assets.loadSounds()
+    Assets.shaders = Assets.loadShaders()
 end
 
 function Assets.loadFonts()
     local fonts = {}
 
-    fonts.small = love.graphics.newFont(p .. "fonts/unilight.ttf", 36)
-    fonts.medium = love.graphics.newFont(p .. "fonts/unilight.ttf", 48)
-    fonts.big = love.graphics.newFont(p .. "fonts/unilight.ttf", 64)
+    fonts.light = {
+        small = love.graphics.newFont(p .. "fonts/unilight.ttf", 36),
+        medium = love.graphics.newFont(p .. "fonts/unilight.ttf", 48),
+        big = love.graphics.newFont(p .. "fonts/unilight.ttf", 64),
+    }
+
+    fonts.bold = {
+        small = love.graphics.newFont(p .. "fonts/unibold.ttf", 36),
+        medium = love.graphics.newFont(p .. "fonts/unibold.ttf", 48),
+        big = love.graphics.newFont(p .. "fonts/unibold.ttf", 64),
+    }
+    
     fonts.title = love.graphics.newFont(p .. "fonts/unibold.ttf", 128)
 
     return fonts
@@ -44,6 +56,33 @@ function Assets.loadSounds()
 
 
     return sounds
+end
+
+function Assets.loadShaders()
+    local shaders = {}
+
+    shaders.default = love.graphics.newShader(p .. "shaders/default.frag")
+
+    shaders.vignette = love.graphics.newShader(p .. "shaders/vignette.fsh")
+
+    shaders.values = {
+        vignette = soft:new(0):to(1)
+    }
+
+    return shaders
+end
+
+--
+
+function Assets.update(dt)
+
+    local cos = math.cos( love.timer.getTime() * 10 )
+
+    shaders.default:send("setting1", cos * .1 + 2)
+    shaders.default:send("setting2", cos * .2 + 100)
+
+    shaders.vignette:send("setting", 1 + shaders.values.vignette:get() * -.3)
+
 end
 
 --

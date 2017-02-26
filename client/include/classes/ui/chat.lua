@@ -25,7 +25,7 @@ function Class:draw()
 
     --TODO: fix that huge mess!!!
 
-    local font = fonts.small --required for font:getWidth()
+    local font = fonts.light.small --required for font:getWidth()
     love.graphics.setFont(font)
 
     local color = lue:getColor("main")
@@ -96,6 +96,8 @@ function Class:addMessage(id, text)
         prefix = prefix,
         text = text
     })
+
+    if #self.messages > 6 then self.messages[#self.messages] = nil end --TODO: use UI manager
 end
 
 --

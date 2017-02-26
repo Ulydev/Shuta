@@ -4,6 +4,7 @@ function Class:initialize(args)
   Object.initialize(self, args)
 
   self.radius = args.radius or 20
+  self.speed = args.speed or 200
   
   self.velocity = {
     x = args.velocity and args.velocity.x or 0,
@@ -16,8 +17,6 @@ function Class:initialize(args)
   end
   
 end
-
-local image
 
 function Class:clientInitialize()
   self.trail = trail

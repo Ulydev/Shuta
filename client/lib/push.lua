@@ -49,6 +49,7 @@ function push:setupScreen(WWIDTH, WHEIGHT, RWIDTH, RHEIGHT, settings)
 
   if self._canvas then
     self.canvas = love.graphics.newCanvas(self._WWIDTH, self._WHEIGHT)
+    self.tcanvas = love.graphics.newCanvas(self._WWIDTH, self._WHEIGHT)
   end --self.canvas = actual canvas, self._canvas = use canvas?
 
   self._borderColor = {0, 0, 0}
@@ -112,13 +113,25 @@ function push:finish(shader)
     love.graphics.pop()
     love.graphics.setCanvas()
 
+    love.graphics.setCanvas(self.tcanvas)
+    love.graphics.setShader(shaders.default)
+    love.graphics.draw(self.canvas)
+    love.graphics.setCanvas()
+
     love.graphics.translate(self._OFFSET.x, self._OFFSET.y)
     love.graphics.setColor(255, 255, 255)
-    love.graphics.setShader(shader or self._shader)
-    love.graphics.draw(self.canvas, 0, 0, 0, self._SCALE.x, self._SCALE.y)
+    
+    love.graphics.setShader(shaders.vignette)
+    love.graphics.draw(self.tcanvas, 0, 0, 0, self._SCALE.x, self._SCALE.y) --FIXME: what a mess
+
     love.graphics.setCanvas(self.canvas)
     love.graphics.clear()
     love.graphics.setCanvas()
+
+    love.graphics.setCanvas(self.tcanvas)
+    love.graphics.clear()
+    love.graphics.setCanvas()
+
     love.graphics.setShader()
   else
     love.graphics.pop()

@@ -170,7 +170,7 @@ function gamera:getVisibleCorners()
 end
 
 function gamera:draw(f)
-  love.graphics.setScissor(self:getWindow())
+  --love.graphics.setScissor(self:getWindow()) --FIXME:
 
   love.graphics.push()
     local scale = self.scale
@@ -184,7 +184,7 @@ function gamera:draw(f)
 
   love.graphics.pop()
 
-  love.graphics.setScissor()
+  --love.graphics.setScissor()
 end
 
 function gamera:toWorld(x,y)

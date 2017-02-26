@@ -2,10 +2,13 @@ local Class = class('TurnEditor')
 
 function Class:initialize()
     
-    self.active = false
+    self:reset()
 
+end
+
+function Class:reset()
+    self:setActive(false)
     self.sent = false
-
 end
 
 function Class:update(dt)
@@ -17,20 +20,35 @@ function Class:update(dt)
 end
 
 function Class:draw()
-    if not self:isActive() or network:getRoom():getState():isRunning() then
+    if not network:getRoom():getState():hasStarted() or not self:isActive() or network:getRoom():getState():isRunning() then
         return true
     end
 
+    local cos = math.cos( love.timer.getTime() * 10 )
+
     local x, y = love.mouse.getPosition()
     love.graphics.setColor( lue:getColor("main") )
-    love.graphics.circle("line", x, y, 20 + math.cos( love.timer.getTime() * 10 ) * 2)
+    love.graphics.circle("line", x, y, 20 + cos * 2)
 
     --
 
     local time = network:getRoom():getState():getTurns():getTimer()
     time = time / network:getRoom():getSettings().turnTimer
 
-    love.graphics.circle("fill", WWIDTH*.5, 100, time * 60)
+    love.graphics.setColor(255, 255, 255, 100)
+    love.graphics.rectangle("fill", WWIDTH*.5-200, 0, 400, 300)
+
+    love.graphics.setColor( lue:getColor("main") )
+    local remainingTurns = network:getRoom():getSettings().maxTurns - network:getRoom():getState():getTurns():getCurrentTurnIndex()
+    love.graphics.printf(remainingTurns .. " turn" .. (remainingTurns == 1 and "" or "s") .. " remaining", 0, 180, WWIDTH, "center")
+
+    love.graphics.setColor( lue:getColor("back") )
+    love.graphics.setLineWidth(20)
+    love.graphics.arc("line", "open", WWIDTH*.5, 100, 60 + cos * 2, (1-time) * math.pi * 2 + math.pi*.5, math.pi*2.5)
+
+    love.graphics.setColor( lue:getColor("main") )
+    love.graphics.setLineWidth(5)
+    love.graphics.arc("line", "open", WWIDTH*.5, 100, 60 + cos * 2, (1-time) * math.pi * 2 + math.pi*.5, math.pi*2.5)
 
 end
 
@@ -60,14 +78,26 @@ function Class:mousepressed(x, y, button)
     local index = state:getTurns():getCurrentTurnIndex()
     local turn = state:getTurns():getTurn( index )[ network:getLocalIndex() ]
 
-    turn:addAction( Action:new({
-        time = 1, --first frame
-        type = "move",
-        data = {
-            x = x,
-            y = y
-        }
-    }) )
+    turn:reset()
+    if button == 2 then
+        turn:addAction( Action:new({
+            time = 1, --first frame
+            type = "move",
+            data = {
+                x = x,
+                y = y
+            }
+        }) )
+    elseif button == 1 then
+        turn:addAction( Action:new({
+            time = 1, --first frame TODO: add other frames as well
+            type = "shoot",
+            data = {
+                x = x,
+                y = y
+            }
+        }) )
+    end
 
 end
 

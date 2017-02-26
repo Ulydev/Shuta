@@ -1,7 +1,7 @@
 local Class = class('Turn')
 
 function Class:initialize(args)
-    self.actions = {}
+    self:reset()
     --[[
     self.actions = {
         action1, --each action has a frame attribute
@@ -18,6 +18,10 @@ function Class:initialize(args)
         end
     end
   
+end
+
+function Class:reset()
+    self.actions = {}
 end
 
 --

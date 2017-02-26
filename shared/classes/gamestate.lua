@@ -1,12 +1,13 @@
 local Class = class("GameState")
 
-function Class:initialize(room)
+function Class:initialize(args)
 
-    self.room = room
+    self.room = args.room
+    self.engineType = args.engineType
 
     self:reset()
 
-    --TODO: client simulation
+    self.map = args.map
 
     return self
 end
@@ -16,36 +17,30 @@ function Class:reset()
     self.objects = {}
     self.turns = TurnManager:new(self)
     self.frame = 0; self.targetFrame = 0;
-    self.engine = PhysicsEngine:new(self)
+    self.engine = _G[self.engineType]:new(self)
+
+    self.winner = nil --FIXME: what about multiple winners
 end
 
 --
 
 --SERVER
 function Class:setupMap() --TODO: this is for 2 players only, make it customizable
-    local map = {
-        { x = 0, y = 0, width = 1000, height = 50 }, --up
-        { x = 0, y = 950, width = 1000, height = 50 }, --down
-        { x = 0, y = 50, width = 50, height = 900 }, --left
-        { x = 950, y = 50, width = 50, height = 900 }, --right
-    }
     local spots = {
-        { x = 500, y = 150 }, --up
-        { x = 500, y = 850 }, --down
+        { x = 0, y = -350 }, --up
+        { x = 0, y = 350 }, --down
     }
 
-    for i = 1, #map do
-        local object = map[i]
-        self:addObject( StaticObject:new( object ) )
+    for i = 1, #self.map.objects do
+        self:addObject( self.map.objects[i] )
     end
 
-    for i = 1, #spots do
-        local spot = spots[i]
+    for i = 1, #self.map.spots do
+        local spot = self.map.spots[i]
         self:addObject( Character:new( {
             client = self:getRoom():getClient(i),
             x = spot.x,
-            y = spot.y,
-            radius = 40,
+            y = spot.y
             --friction, speed, etc.? TODO:
         } ) ) --Character is controlled by client
     end
@@ -54,14 +49,16 @@ end
 
 --CLIENT
 function Class:updateData( stateData )
-    for i = 1, #stateData.objects do
-        local object = stateData.objects[i]
-        if object.class and _G[object.class] then
-            self:addObject( _G[object.class]:new(object) ) --TODO: ugly code, needs class name to be declared exactly that way
+    if stateData.objects then
+        for i = 1, #stateData.objects do
+            local object = stateData.objects[i]
+            if object.class and _G[object.class] then
+                self:addObject( _G[object.class]:new(object) ) --TODO: ugly code, needs class name to be declared exactly that way
+            end
         end
+        --once we've added all objects we don't need them anymore
+        stateData.objects = nil
     end
-    --once we've added all objects we don't need them anymore
-    stateData.objects = nil
 
     table.populate(self, stateData)
 end
@@ -75,10 +72,26 @@ function Class:update(dt)
         end
 
         self:getTurns():update(dt)
+    else
+        if server then
+            if self.restartTime then
+                self.restartTime = self.restartTime - dt
+                if self.restartTime < 0 then --restart game
+                    self.restartTime = nil
+                    self:reset()
+                    self:getRoom():checkNewGame()
+                end
+            end
+        end
     end
 end
 
 function Class:draw()
+    love.graphics.setColor( lue:getColor("main", 100) )
+    love.graphics.setLineWidth(15)
+    love.graphics.circle("line", 0, 0, 750) --TODO: custom boundaries - default is 750
+
+    love.graphics.setColor(255, 255, 255)
     local objects = self:getObjects()
     for i = 1, #objects do
       local object = objects[i]
@@ -92,9 +105,32 @@ end
 if client then
 
     function Class:onStopRunning()
+        if self:getWinner() then
+            self:stop()
+            return true
+        end
+
+        local remainingTurns = network:getRoom():getSettings().maxTurns - network:getRoom():getState():getTurns():getCurrentTurnIndex()
+        if remainingTurns < 1 then return true end --let's wait for the final server answer
+
         network:getRoom():getState():getTurns():resetTimer()
         network:getRoom():getState():getTurns():nextTurn()
-        g.hud.editor:resetTurn()
+
+        g.hud.editor:resetTurn() --TODO: better organization
+    end
+
+elseif server then
+
+    function Class:onStopRunning()
+
+        if self:getWinner() or self:getTurns():getCurrentTurnIndex() > self:getRoom():getSettings().maxTurns then
+            if not self:getWinner() then self:setWinner({ id = 0 }) end --0 is draw
+            self:stop()
+            self.restartTime = self:getRoom():getSettings().turnLength + 4
+            server:sendToAllInRoom(self:getRoom().id, "gameState", self:serializeWinner())
+            log("[#" .. self:getRoom().id .. "] Game ended, winner is " .. (self:getWinner().id or self:getWinner():getIndex()) ..". Restarting in " .. self.restartTime)
+        end
+
     end
 
 end
@@ -201,12 +237,21 @@ end
 function Class:start()
     self.started = true
 
-    self:setupMap()
+    self:setupMap( self.map ) --TODO: custom system
 end
 
 function Class:stop()
     self.started = false
 
+end
+
+--
+
+function Class:setWinner(winner)
+    self.winner = winner
+end
+function Class:getWinner()
+    return self.winner
 end
 
 --
@@ -234,9 +279,16 @@ end
 
 --
 
+function Class:serializeWinner()
+    return {
+        winner = { id = self.winner.id or self.winner:getIndex() } --winner is a client table containing id (already got name client-side)
+    }
+end --FIXME: ugly
+
 function Class:serialize(withMap)
     local serialized = {}
     serialized.started = self.started
+    serialized.engineType = self.engineType --FIXME: maybe just "gameMode"?
     serialized.objects = {}
 
     for i = 1, self:getObjectCount() do

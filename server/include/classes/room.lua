@@ -5,7 +5,8 @@ function Class:initialize(args)
     self.id = args.id
     self.name = args.name
     self.settings = GameSettings:new(args.settings) --load settings first
-    self.state = GameState:new(self) --link state to room
+    
+    self.state = GameState:new({ room = self, map = args.map, engineType = args.engineType or "SimplePhysicsEngine" }) --link state to room
 
     return self
 end
@@ -104,8 +105,6 @@ function Class:stopGame()
     local gameState = self:getState()
 
     gameState:stop()
-
-    server:sendToAllInRoom(self.id, "gameState", gameState:serialize())
 
     log("Game " .. self.id .. " has ended")
 end

@@ -10,7 +10,7 @@ local buttons = {
         y = WHEIGHT*.5 - 100,
         width = 600,
         height = 160,
-        font = fonts.big,
+        font = fonts.light.big,
         action = function ()
             client:send("joinRoom")
         end
@@ -21,7 +21,7 @@ local buttons = {
         y = WHEIGHT*.5 + 100,
         width = 600,
         height = 160,
-        font = fonts.big,
+        font = fonts.light.big,
         action = function ()
             state:push("scenes/overlays/roomlist", {})
         end
@@ -32,7 +32,7 @@ local buttons = {
         y = WHEIGHT*.5 + 300,
         width = 600,
         height = 160,
-        font = fonts.big,
+        font = fonts.light.big,
         action = function ()
             love.event.push("quit")
         end
@@ -42,6 +42,8 @@ local buttons = {
 --
 
 function scene.load(params)
+
+    shaders.values.vignette:to(0)
   
 end
 
@@ -63,7 +65,7 @@ function scene.draw()
         buttons[i]:draw()
     end
 
-    love.graphics.setFont( fonts.medium )
+    love.graphics.setFont( fonts.light.medium )
     love.graphics.setColor( lue:getColor("mid") )
     love.graphics.printf( "Connected as " .. (network:getLocalName() or "") .. "\nv" .. version, -10, 10, WWIDTH, "right" )
 
@@ -71,7 +73,14 @@ function scene.draw()
 
     love.graphics.setFont( fonts.title )
     love.graphics.setColor( lue:getColor("main") )
-    love.graphics.printf( "Shuta", 0, 100 + offset * 20, WWIDTH, "center" )
+    love.graphics.push()
+
+    local x, y = WWIDTH*.5, 100 + offset * 10
+    love.graphics.translate(x, y)
+    love.graphics.rotate( math.cos(offset * 10) * .02 )
+    love.graphics.translate(-x, -y)
+    love.graphics.printf( "SHUTA", 0, y, WWIDTH, "center" )
+    love.graphics.pop()
 
 end
 

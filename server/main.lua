@@ -1,4 +1,4 @@
-version = "0.0.1"
+version = "0.0.2"
 server = true --required
 
 local sharedpath = require("sharedpath")
@@ -56,11 +56,16 @@ StaticObject = sharedclass          "staticobject" --not updated
 
 Character = sharedclass             "character" --controlled by client
 Target = sharedclass                "target"
+Bullet = sharedclass                "bullet"
+Planet = sharedclass                "planet"
 
 
 
+--
 StateEngine = shared                "engine.state" --global engine
-PhysicsEngine = shared              "engine.physics" --inherits from StateEngine -> custom functions
+--
+SimplePhysicsEngine = shared        "engine.simplephysics" --inherits from StateEngine -> custom functions
+RadialPhysicsEngine = shared        "engine.radialphysics"
 
 
 
@@ -83,13 +88,57 @@ function love.load()
     log("Ready to operate!")
 
     --DEBUG:
-    for i = 1, 3 do
-        local name
-        if i == 1 then name = "Regular" end
-        if i == 2 then name = "Fast-paced" end
-        if i == 3 then name = "Slow-paced" end
-        network:createRoom({ name = name })
-    end
+    local spots = {
+        { x = 0, y = -350 },
+        { x = 0, y = 350 }
+    }
+    network:createRoom({
+        name = "Regular",
+        settings = { turnTimer = 8, turnLength = 2.5 },
+        map = { spots = spots, objects = {
+            StaticObject:new({ x = -300, y = -300, width = 100, height = 50 }),
+            StaticObject:new({ x = -300, y = -250, width = 50, height = 50 }),
+
+            StaticObject:new({ x = 200, y = -300, width = 100, height = 50 }),
+            StaticObject:new({ x = 250, y = -250, width = 50, height = 50 }),
+
+            StaticObject:new({ x = -300, y = 200, width = 50, height = 50 }),
+            StaticObject:new({ x = -300, y = 250, width = 100, height = 50 }),
+
+            StaticObject:new({ x = 250, y = 200, width = 50, height = 50 }),
+            StaticObject:new({ x = 200, y = 250, width = 100, height = 50 }),
+
+            StaticObject:new({ x = -50, y = -50, width = 100, height = 100 }),
+        } }
+    })
+    network:createRoom({
+        name = "Fast-paced",
+        settings = { turnTimer = 3.5, turnLength = 1.5 },
+        map = { spots = spots, objects = {
+            StaticObject:new({ x = -300, y = -300, width = 100, height = 50 }),
+            StaticObject:new({ x = -300, y = -250, width = 50, height = 50 }),
+
+            StaticObject:new({ x = 200, y = -300, width = 100, height = 50 }),
+            StaticObject:new({ x = 250, y = -250, width = 50, height = 50 }),
+
+            StaticObject:new({ x = -300, y = 200, width = 50, height = 50 }),
+            StaticObject:new({ x = -300, y = 250, width = 100, height = 50 }),
+
+            StaticObject:new({ x = 250, y = 200, width = 50, height = 50 }),
+            StaticObject:new({ x = 200, y = 250, width = 100, height = 50 }),
+
+            StaticObject:new({ x = -50, y = -50, width = 100, height = 100 }),
+        } }
+    })
+    network:createRoom({
+        name = "Physics (experimental)",
+        settings = { turnTimer = 8, turnLength = 2.5 },
+        engineType = "RadialPhysicsEngine",
+        map = { spots = spots, objects = {
+            Planet:new({ x = 0, y = 0, radius = 250 })
+        } }
+    })
+    
   
 end
 

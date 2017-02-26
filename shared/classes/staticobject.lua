@@ -13,8 +13,9 @@ end
 --CLIENT
 function Class:draw()
 
-    love.graphics.setLineWidth(5)
-    love.graphics.rectangle("line", self.x, self.y, self.width, self.height)
+    love.graphics.setColor( lue:getColor("main", 50) )
+    --love.graphics.setLineWidth(5)
+    love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
 
 end
 --/CLIENT

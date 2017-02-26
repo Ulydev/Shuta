@@ -15,6 +15,15 @@ function math.to(a, b, v)
     return a
 end
 
+function math.dist(x1, y1, x2, y2)
+    return math.sqrt( (x1-x2)^2 + (y1-y2)^2 )
+end
+
+function math.adist(a1, a2)
+    local diff = ( a2 - a1 + 180 ) % 360 - 180
+    return (diff < -180) and (diff + 360) or diff
+end
+
 --table
 
 function table.populate(source, with)

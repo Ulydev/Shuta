@@ -6,13 +6,34 @@ scene.name = "roomlist"
 local time = 0
 local selection = 1
 
+local buttons = {}
+
 function scene.load(params)
 
   --request room list
   client:send("roomList")
 
   event:on("roomList", function()
-    local roomList = 
+    --add buttons and stuff TODO:
+    local roomList = network:getRoomList()
+
+    buttons = {}
+    for i = 1, #roomList do
+
+      local room = roomList[i]
+      buttons[i] = Button:new({
+        text = room.name,
+        x = WWIDTH*.5,
+        y = WHEIGHT*.5 - 300 + 200 * (i-1),
+        width = 600,
+        height = 160,
+        font = fonts.light.big,
+        action = function ()
+            client:send("joinRoom", room.id)
+        end
+      })
+
+    end
   end)
   
 end
@@ -20,6 +41,10 @@ end
 function scene.update(dt)
 
   time = math.to(time, scene.remove and 0 or 1, dt * 8)
+
+  for i = 1, #buttons do
+      buttons[i]:update(dt)
+  end
 
   return true
 
@@ -32,21 +57,16 @@ function scene.draw()
 
   --
 
-  local roomList = network:getRoomList()
-
   local time = ease("cubicout", time)
 
   love.graphics.push()
   --love.graphics.translate((1 - time) * WWIDTH, 0)
 
-  if roomList then
+  if network:getRoomList() then
   
-      love.graphics.setFont( fonts.medium )
       love.graphics.setColor( lue:getColor("main") )
-
-      for i = 1, #roomList do
-        local room = roomList[i]
-        love.graphics.printf(room.name, 0, WHEIGHT * ((i-1) / #roomList), WWIDTH, "center")
+      for i = 1, #buttons do
+          buttons[i]:draw()
       end
 
   else
@@ -64,6 +84,8 @@ end
 
 function scene.unload()
   
+  event:reset("roomList")
+
   scene.remove = true
   
 end
@@ -72,13 +94,19 @@ end
 
 function scene.keypressed(key, scancode, isrepeat)
 
+  if key == "escape" then
+    state:pop()
+  end
+
   return true --block propagation
   
 end
 
 function scene.mousepressed(x, y, button)
 
-
+  for i = 1, #buttons do
+    buttons[i]:mousepressed(x, y, button)
+  end
 
   return true
 

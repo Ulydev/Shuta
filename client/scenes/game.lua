@@ -39,16 +39,22 @@ function game.load(params)
     local started = network:getRoom():getState():hasStarted()
     if started then
 
-      print("Game has started") 
+      print("Game has started")
+
+      hud.editor:reset()
 
       local gstate = network:getRoom():getState()
+
+      players = nil; player = nil; 
 
       players = gstate:filterObjects(
         function(o) return ( o.class == "Character" ) end
       )
+      g.players = players
+
       for i = 1, #players do
         if players[i].client.id == network:getLocalIndex() then
-          player = players[i]
+          player = players[i]; g.player = player;
           break;
         end
       end
@@ -63,8 +69,7 @@ function game.load(params)
 
       hud.editor:setActive(false)
 
-      player = nil
-      players = nil
+      --we have a winner
 
     end
   end)
@@ -78,6 +83,8 @@ function game.update(dt)
   if network:getRoom():getState():hasStarted() then
     updateCamera(true)
   end
+
+  shaders.values.vignette:to( (not network:getRoom():getState():hasStarted() or network:getRoom():getState():isRunning()) and 0 or 1 )
 
 end
 
@@ -133,7 +140,12 @@ function game.keypressed(key, scancode, isrepeat)
     chat:sendInput()
     chat:toggleInput()
   elseif key == "escape" then
-    chat:toggleInput()
+    if chat.isWriting then
+      chat:toggleInput()
+    else
+      client:send("leaveRoom") --TODO: implement connection screen to prevent spamclicking the server (both client + server side)
+      state:switch("scenes/home")
+    end
   elseif key == "space" then
     editor:sendTurn()
   end

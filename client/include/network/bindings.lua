@@ -19,7 +19,7 @@ local function setConnectionCallbacks(client)
 
     client:on("disconnect", function()
         print("disconnected")
-        local msg = "Connection lost"
+        local msg = "Connection lost\nPlease try again later"
         if state:getName(1) == "connect" then
             msg = "Couldn't connect to server"
         end
@@ -36,11 +36,13 @@ local function setRoomCallbacks(client)
 
     client:on("roomList", function(roomList)
         network:setRoomList( roomList )
+        event:emit("roomList")
     end)
 
     --
 
     client:on("joinRoom", function(roomData)
+
         network:setRoom( Room:new( roomData ) )
 
         state:switch("scenes/game") --fixes order issue TODO:
@@ -48,6 +50,8 @@ local function setRoomCallbacks(client)
         if roomData.state then
             updateData( roomData.state )
         end
+
+        love.messagereceived("Connected to room " .. network:getRoom().id)
     end)
 
     --
@@ -94,6 +98,12 @@ local function setDataCallbacks(client)
     --
 
     client:on("gameState", function(stateData) --updates state
+        if network:getRoom():getState():getWinner() then
+            network:getRoom():getState():reset()
+        end
+
+        pprint(stateData)
+
         print("Received game state")
 
         updateData( stateData )

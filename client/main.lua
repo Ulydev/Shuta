@@ -1,4 +1,4 @@
-version = "0.0.1"
+version = "0.0.2"
 client = true --required
 
 io.stdout:setvbuf('no') --fixes print issues
@@ -13,12 +13,14 @@ debug = false --various debug utils
 remote_debug = false --enables lovebird
 local_debug = false --connects to localhost
 nosound_debug = false --set volume to 0 from start
+nofx_debug = false --disable effects and improve performance
 
-for i = 2, 5 do
+for i = 2, 6 do
   if arg[i] == "-debug" then debug = true end
   if arg[i] == "-remote" then remote_debug = true end
   if arg[i] == "-local" then local_debug = true end
   if arg[i] == "-nosound" then nosound_debug = true end
+  if arg[i] == "-nofx" then nofx_debug = true end
 end
 
 --//////////////////////////////////--
@@ -63,8 +65,6 @@ Room = reqclass               "network.room"
 GameState = sharedclass       "gamestate"
 
 network = NetworkManager:new()
-network.init = include        "network.init"
-network.bindings = include    "network.bindings"
 
 
 
@@ -83,15 +83,19 @@ DynamicObject = sharedclass   "dynamicobject" --updated by server
 StaticObject = sharedclass    "staticobject" --not updated
 
 Character = sharedclass       "character"
-
 Target = sharedclass          "target"
+Bullet = sharedclass          "bullet"
+Planet = sharedclass          "planet"
 
 TurnManager = sharedclass     "turnmanager"
 Turn = sharedclass            "turn"
 Action = sharedclass          "action"
 
+--
 StateEngine = shared          "engine.state" --global engine
-PhysicsEngine = shared        "engine.physics" --inherits from StateEngine -> custom functions
+--
+SimplePhysicsEngine = shared  "engine.simplephysics" --inherits from StateEngine -> custom functions
+RadialPhysicsEngine = shared  "engine.radialphysics"
 
 --UI components
 HUD = reqclass                "ui.hud"
@@ -128,7 +132,8 @@ end
 push:setupScreen(WWIDTH, WHEIGHT, RWIDTH, RHEIGHT, {
   fullscreen = fullscreenMode,
   resizable = not phoneMode,
-  highdpi = true
+  highdpi = true,
+  canvas = not nofx_debug
 })
 
 fixed:setRate( 1 / 30 ):setFunction(function(dt) love.fixedupdate(dt) end) --30 fps
@@ -142,15 +147,14 @@ event = lem:new()
 function love.load()
 
   --load assets
-  fonts, images, sounds = Assets.load()
+  Assets.load()
+  fonts, images, sounds, shaders = Assets.fonts, Assets.images, Assets.sounds, Assets.shaders
 
   if nosound_debug then
     Assets.setVolume(0)
   else
     Assets.setVolume(.5)
   end
-
-  love.graphics.setFont(fonts.small)
 
   --colors
   lue:setColor("main", { 200, 0, 0 })
@@ -160,10 +164,17 @@ function love.load()
   --transitions
   ease:add("sin", "math.sin(x * math.pi / 2)")
 
+  --shaders
+  if not nofx_debug then push:setShader( shaders.vignette ) end
+
   --create client
+  network.init = include        "network.init"
+  network.bindings = include    "network.bindings"
+
   client = network.init()
   network.bindings.init( client )
   client:connect()
+  --/
   
   screen:setDimensions(push:getDimensions())
   
@@ -189,6 +200,8 @@ function love.update(dt)
   fixed:update(dt)
 
   --
+
+  Assets.update(dt)
 
   network:update(dt)
   
