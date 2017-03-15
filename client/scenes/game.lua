@@ -20,12 +20,14 @@ local function updateCamera(lerp)
   end
   local x, y = camera:getPosition()
   if not lerp then x, y = pos.x, pos.y end
-  camera:setPosition( math.lerp(x, pos.x, .1), math.lerp(y, pos.y, .1) )
+  camera:setPosition( math.lerp(x, pos.x, .05), math.lerp(y, pos.y, .05) )
 end
 
 --[[ State ]]--
 
 function game.load(params)
+
+  g.speedFactor = soft:new(1):to(1)
 
   hud = HUD:new()
   g.hud = hud
@@ -35,11 +37,15 @@ function game.load(params)
   camera:setWindow(0, 0, WWIDTH, WHEIGHT)
   g.camera = camera
 
+  g.simulation = GameStateSimulation:new( network:getRoom():getState() )
+
   event:on("gameStarted", function()
     local started = network:getRoom():getState():hasStarted()
     if started then
 
-      print("Game has started")
+      love.messagereceived("Game starting")
+
+      g.simulation:resetFromState()
 
       hud.editor:reset()
 
@@ -48,7 +54,7 @@ function game.load(params)
       players = nil; player = nil; 
 
       players = gstate:filterObjects(
-        function(o) return ( o.class == "Character" ) end
+        function(o) return o:isInstanceOf(Character) end
       )
       g.players = players
 
@@ -78,19 +84,29 @@ end
 
 function game.update(dt)
 
+  local slowdt = dt * g.speedFactor:get()
+
   hud:update(dt)
 
-  if network:getRoom():getState():hasStarted() then
+  local gameState = network:getRoom():getState()
+  if gameState:hasStarted() then
+    gameState:update(slowdt)
+    if not gameState:isRunning() then g.simulation:update(slowdt) end
     updateCamera(true)
   end
 
-  shaders.values.vignette:to( (not network:getRoom():getState():hasStarted() or network:getRoom():getState():isRunning()) and 0 or 1 )
+  local state = network:getRoom():getState()
+  shaders.values.vignette:to( (not state:hasStarted() or state:isRunning()) and 0 or 1 )
+
+  fixed:update(slowdt)
 
 end
 
 function game.fixedupdate(dt)
 
-  network:getRoom():getState():fixedupdate(dt)
+  local gameState = network:getRoom():getState()
+  gameState:fixedupdate(dt)
+  if not gameState:isRunning() then g.simulation:fixedupdate(dt) end
 
 end
 
@@ -98,14 +114,13 @@ end
 
 function game.draw()
 
-  love.graphics.setColor( lue:getColor("back") )
-  love.graphics.rectangle("fill", 0, 0, WWIDTH, WHEIGHT)
-
+  push:setCanvas("game")
 
   camera:draw( game.drawCamera )
 
-  love.graphics.setColor( lue:getColor("main") )
+  push:setCanvas("ui")
 
+  love.graphics.setColor( lue:getColor("main") )
   hud:draw() --waiting for players or game started
 
 end
@@ -116,6 +131,7 @@ function game.drawCamera(l, t, w, h)
 
   local gameState = network:getRoom():getState()
   if gameState:hasStarted() then
+    if not gameState:isRunning() then g.simulation:draw(100) end
     gameState:draw()
   end
   
@@ -146,7 +162,7 @@ function game.keypressed(key, scancode, isrepeat)
       client:send("leaveRoom") --TODO: implement connection screen to prevent spamclicking the server (both client + server side)
       state:switch("scenes/home")
     end
-  elseif key == "space" then
+  elseif key == "space" and not chat.isWriting then
     editor:sendTurn()
   end
   

@@ -9,6 +9,12 @@ function Class:initialize(args)
 
     self.map = args.map
 
+    if args.room and args.room.state and args.room.state.currentTurn then
+        for i = 1, args.room.state.currentTurn - 1 do
+            self:getTurns():nextTurn()
+        end
+    end
+
     return self
 end
 
@@ -16,7 +22,10 @@ function Class:reset()
     self.started = false
     self.objects = {}
     self.turns = TurnManager:new(self)
-    self.frame = 0; self.targetFrame = 0;
+
+    self.frame = 0
+    self.targetFrame = 0
+
     self.engine = _G[self.engineType]:new(self)
 
     self.winner = nil --FIXME: what about multiple winners
@@ -65,14 +74,16 @@ end
 
 function Class:update(dt)
     if self:hasStarted() then
+
         local objects = self:getObjects()
         for i = 1, #objects do
             local object = objects[i]
-            if object.update then object:update(dt) end
+            if object.update then object:update( dt ) end
         end
 
-        self:getTurns():update(dt)
-    else
+        self:getTurns():update( dt )
+
+    else --TODO: move update code to fixedupdate, make update() client-side only?
         if server then
             if self.restartTime then
                 self.restartTime = self.restartTime - dt
@@ -87,6 +98,9 @@ function Class:update(dt)
 end
 
 function Class:draw()
+    love.graphics.setColor(0, 0, 0)
+    love.graphics.print(self:getTurns():getCurrentTurnIndex(), 100, 100)
+
     love.graphics.setColor( lue:getColor("main", 100) )
     love.graphics.setLineWidth(15)
     love.graphics.circle("line", 0, 0, 750) --TODO: custom boundaries - default is 750
@@ -111,24 +125,29 @@ if client then
         end
 
         local remainingTurns = network:getRoom():getSettings().maxTurns - network:getRoom():getState():getTurns():getCurrentTurnIndex()
-        if remainingTurns < 1 then return true end --let's wait for the final server answer
+        if remainingTurns == 1 then return true end --let's wait for the final server answer
 
         network:getRoom():getState():getTurns():resetTimer()
         network:getRoom():getState():getTurns():nextTurn()
 
         g.hud.editor:resetTurn() --TODO: better organization
+        g.simulation:resetFromState()
+        g.simulation:startSimulation()
     end
 
 elseif server then
 
     function Class:onStopRunning()
 
-        if self:getWinner() or self:getTurns():getCurrentTurnIndex() > self:getRoom():getSettings().maxTurns then
+        local _draw = self:getTurns():getCurrentTurnIndex() == self:getRoom():getSettings().maxTurns - 1
+        if self:getWinner() or _draw then
             if not self:getWinner() then self:setWinner({ id = 0 }) end --0 is draw
             self:stop()
-            self.restartTime = self:getRoom():getSettings().turnLength + 4
-            server:sendToAllInRoom(self:getRoom().id, "gameState", self:serializeWinner())
-            log("[#" .. self:getRoom().id .. "] Game ended, winner is " .. (self:getWinner().id or self:getWinner():getIndex()) ..". Restarting in " .. self.restartTime)
+            self.restartTime = self:getRoom():getSettings().turnLength + 4 --FIXME:
+            if _draw then
+                server:sendToAllInRoom(self:getRoom().id, "gameState", self:serializeWinner())
+            end
+            log("[#" .. self:getRoom().id .. "] Game ended, winner is " .. self:getWinner().id ..". Restarting in " .. self.restartTime)
         end
 
     end
@@ -148,7 +167,6 @@ function Class:fixedupdate(dt)
 
             if self.frame == self.targetFrame and self.onStopRunning then
                 self:onStopRunning()
-                --client only for now, TODO: if we need server-side callbacks
             end
 
         end
@@ -218,7 +236,7 @@ end
 e.g. to find local player,
 
 state:getObject( state:filterObjects(function(o)
-    return o.class == "Character" and o.id == network:getLocalIndex()
+    return o:isInstanceOf(Character) and o.id == network:getLocalIndex()
 end)[1] )
 
 TODO: weird
@@ -281,12 +299,13 @@ end
 
 function Class:serializeWinner()
     return {
-        winner = { id = self.winner.id or self.winner:getIndex() } --winner is a client table containing id (already got name client-side)
+        winner = { id = self.winner.id or self.winner.id } --winner is a client table containing id (already got name client-side)
     }
 end --FIXME: ugly
 
 function Class:serialize(withMap)
     local serialized = {}
+    serialized.frame = self.frame
     serialized.started = self.started
     serialized.engineType = self.engineType --FIXME: maybe just "gameMode"?
     serialized.objects = {}
@@ -297,7 +316,7 @@ function Class:serialize(withMap)
 
         local skip = false
 
-        if object.class == "StaticObject" and not withMap then --do not send static objects unless needed
+        if object:isInstanceOf(StaticObject) and not withMap then --do not send static objects unless needed
             skip = true
         end
 
@@ -305,6 +324,8 @@ function Class:serialize(withMap)
             serialized.objects[i] = object:serialize()
         end
     end
+
+    if server then serialized.currentTurn = self:getTurns():getCurrentTurnIndex() end
 
     return serialized
 end

@@ -36,7 +36,7 @@ function Class:draw()
     time = time / network:getRoom():getSettings().turnTimer
 
     love.graphics.setColor(255, 255, 255, 100)
-    love.graphics.rectangle("fill", WWIDTH*.5-200, 0, 400, 300)
+    love.graphics.rectangle("fill", WWIDTH*.5-200, 0, 400, 240)
 
     love.graphics.setColor( lue:getColor("main") )
     local remainingTurns = network:getRoom():getSettings().maxTurns - network:getRoom():getState():getTurns():getCurrentTurnIndex()
@@ -49,6 +49,51 @@ function Class:draw()
     love.graphics.setColor( lue:getColor("main") )
     love.graphics.setLineWidth(5)
     love.graphics.arc("line", "open", WWIDTH*.5, 100, 60 + cos * 2, (1-time) * math.pi * 2 + math.pi*.5, math.pi*2.5)
+
+    --
+
+    local turns = network:getRoom():getState():getTurns()
+    local currentTurn = turns:getCurrentTurn()[g.player.client.id]
+
+    local action = {}
+    if currentTurn and currentTurn.actions then
+        action = currentTurn.actions[1] or action
+    end
+
+    --
+
+    love.graphics.push()
+    love.graphics.translate(0, -80)
+
+    local selectedColor = { 200, 0, 0 }
+    local inactiveColor = { 240, 240, 240 }
+
+    local image
+    local scale = .14
+
+    love.graphics.setLineWidth(5)
+    for i = 1, 2 do
+        local x = i == 1 and (WWIDTH-500) or (WWIDTH-300)
+
+        if i == 1 then love.graphics.setColor(unpack(action.type == "move" and selectedColor or inactiveColor)) end
+        if i == 2 then love.graphics.setColor(unpack(action.type == "shoot" and selectedColor or inactiveColor)) end
+
+        love.graphics.rectangle("fill", x, WHEIGHT-200, 140, 140, 50, 50)
+    end
+
+    image = images.ui.editor.actions.move
+    love.graphics.setColor(unpack(action.type == "move" and inactiveColor or selectedColor))
+    love.graphics.draw(image, WWIDTH - 430, WHEIGHT - 126, 0, scale, scale, image:getWidth()*.5, image:getHeight()*.5)
+    
+    image = images.ui.editor.actions.shoot
+    love.graphics.setColor(unpack(action.type == "shoot" and inactiveColor or selectedColor))
+    love.graphics.draw(image, WWIDTH - 234, WHEIGHT - 126, 0, scale, scale, image:getWidth()*.5, image:getHeight()*.5)
+
+    love.graphics.setColor(255, 255, 255)
+    love.graphics.draw(images.ui.controls.mouseright, WWIDTH - 450, WHEIGHT-40, 0, .5, .5)
+    love.graphics.draw(images.ui.controls.mouseleft, WWIDTH - 250, WHEIGHT-40, 0, .5, .5)
+
+    love.graphics.pop()
 
 end
 
@@ -64,7 +109,7 @@ end
 --
 
 function Class:mousepressed(x, y, button)
-    if not self:isActive() or network:getRoom():getState():isRunning() then
+    if self.sent or not self:isActive() or network:getRoom():getState():isRunning() then
         return true
     end
 
@@ -99,6 +144,9 @@ function Class:mousepressed(x, y, button)
         }) )
     end
 
+    g.simulation:resetFromState()
+    g.simulation:startSimulation()
+
 end
 
 function Class:keypressed(key, scancode, isrepeat)
@@ -130,7 +178,7 @@ function Class:sendTurn()
         --set timer to 0 so player has feedback
         turns:setTimer( 0 )
 
-        sounds.ui.confirm1:play() --TODO: place elsewhere?
+        sounds.ui.turn.confirm:play() --TODO: place elsewhere?
 
     end
 end

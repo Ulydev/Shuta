@@ -15,10 +15,18 @@ end
 
 function Class:draw()
 
-    love.graphics.setColor(255, 0, 0)
     love.graphics.setLineWidth((1 - self.time) * 10)
     love.graphics.circle("line", self.x, self.y, self.radius * self.time)
 
+end
+
+function Class:serialize()
+    return table.merge(
+        Object.serialize(self),
+        {
+            radius = self.radius
+        }
+    )
 end
 
 return Class

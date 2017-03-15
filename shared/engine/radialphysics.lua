@@ -1,7 +1,7 @@
-local Class = class('RadialPhysicsEngine', StateEngine)
+local Class = class('RadialPhysicsEngine', BaseEngine)
 
 function Class:initialize(state)
-    StateEngine.initialize(self, state)
+    BaseEngine.initialize(self, state)
 
     --custom stuff
   
@@ -11,17 +11,17 @@ end
 
 function Class:getPlayer(index)
     return self:getState():filterObject(function(o)
-        local isCharacter = (o.class == "Character")
+        local isCharacter = o:isInstanceOf(Character)
         if not isCharacter then return false end
 
-        local isChosen = (o:getClient().id or o:getClient():getIndex()) == index
+        local isChosen = (o:getClient().id or o:getClient().id) == index
         return isChosen
     end)
 end
 
 function Class:getPlanet()
     return self:getState():filterObject(function(o)
-        local isPlanet = (o.class == "Planet")
+        local isPlanet = o:isInstanceOf(Planet)
         return isPlanet
     end)
 end
@@ -45,8 +45,8 @@ function Class:applyAction(index, action)
         local playerAngle = math.atan2( player.y, player.x )
         local playerDist = math.sqrt( player.x^2 + player.y^2 )
 
-        velocity.x = math.clamp(-1, math.adist(playerAngle, mouseAngle), 1)
-        velocity.y = math.clamp(-40, playerDist - mouseDist, 40)
+        velocity.x = math.clamp(-2, math.adist(playerAngle, mouseAngle), 2) * .2
+        velocity.y = math.clamp(-10, playerDist - mouseDist, 10) * 6
 
         --
 
@@ -104,16 +104,48 @@ function Class:updateObject(dt, object)
     end
 
     if object.radius then
+        print(object.radius)
         local dist = math.sqrt(object.x^2 + object.y^2)
         local maxDist = 750 - object.radius
         if dist > maxDist then
             local angle = math.atan2(object.y, object.x)
             object.x, object.y = math.cos(angle) * maxDist, math.sin(angle) * maxDist
-            if object.class == "Bullet" then
+            if object:isInstanceOf(Bullet) then
                 if server then
                     self:getState():removeObject(object)
                 elseif client then
                     self:getState():removeObject(object) --TODO: add to remove queue (keep drawing w/ fade effect)
+                end
+            end
+        end
+    end
+
+    --
+
+    if client and self.state:isInstanceOf(GameStateSimulation) then return true end --don't handle collision on ghost prediction
+    --TODO: better collision handling
+    if object:isInstanceOf(Character) then --check for collision w/ enemy bullet
+        local bullets = self:getState():filterObjects(function(o)
+            return o:isInstanceOf(Bullet) and (o.client.id or o.client.id) ~= (object.client.id or object.client.id)
+        end)
+        for i = 1, #bullets do
+            local bullet = bullets[i]
+            local radius = object.radius + bullet.radius
+            if math.dist(object.x, object.y, bullet.x, bullet.y) < radius then
+                --collision
+                local _first = self:getState():getWinner() == nil
+                self:getState():setWinner( bullet.client )
+
+                if client and _first then --visual hints
+                    g.speedFactor:to(.75)
+                    object:kill()
+
+                    local winnerName
+                    local room = network:getRoom()
+                    for i = 1, room:getClientCount() do
+                        if room:getClient(i).id == room:getState():getWinner().id then winnerName = room:getClient(i).name; break; end
+                    end
+                    love.messagereceived(winnerName and (winnerName .. " wins") or "Draw") --FIXME:
                 end
             end
         end

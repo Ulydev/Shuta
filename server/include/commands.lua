@@ -34,7 +34,7 @@ end, "[command]")
 cmd:on( "roomlist", function()
     print("->Room list")
     for index, room in pairs( network:getRooms() ) do
-        print("#" .. room.id .. " - " .. room:getClientCount() .. "/" .. room:getSettings().maxClients)
+        print("#" .. room.id .. " - " .. room:getClientCount() .. "/" .. room:getSettings().maxClients .. " - " .. room.name)
     end
 end)
 
@@ -54,4 +54,7 @@ cmd:on( "echo", function(roomId, ...)
 end, "[roomId (0=global)] [message]")
 
 --
+
+--
+
 end

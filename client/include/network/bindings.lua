@@ -77,7 +77,7 @@ local function setRoomCallbacks(client)
         love.messagereceived(name .. "(" .. remoteClient.id .. ") has left the game")
 
         if network:getRoom():getState():filterObject(function(o)
-            return (o.class == "Character" and o.client.id == remoteClient.id)
+            return o:isInstanceOf(Character) and o.client.id == remoteClient.id
         end) then
 
             network:getRoom():getState():reset()
@@ -113,6 +113,8 @@ local function setDataCallbacks(client)
 
     client:on("turnList", function(turnList)
 
+        pprint(turnList)
+
         local room = network:getRoom()
         if room then
 
@@ -126,10 +128,9 @@ local function setDataCallbacks(client)
             end
             --once every turn is added, simulate state then go to next /round/
 
-            print("Running round")
             room:getState():nextTurnFrame()
 
-            sounds.ui.confirm2:play() --TODO: place elsewhere
+            sounds.ui.turn.start:play() --TODO: place elsewhere
 
         end
         

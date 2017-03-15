@@ -1,4 +1,4 @@
-local Class = class('StateEngine') --TODO: naming may be a bit confusing
+local Class = class('BaseEngine')
 
 function Class:initialize(state)
 

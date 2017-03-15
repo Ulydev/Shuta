@@ -5,8 +5,6 @@ function Class:initialize(args)
   StaticObject.initialize(self, args)
 
   self.radius = args.radius or 200
-
-  self.class = "Planet"
   
 end
 

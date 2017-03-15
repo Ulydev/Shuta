@@ -8,7 +8,7 @@ end
 
 function Class:serialize()
   return {
-    class = self.class,
+    class = self.class.name, --perfect
     x = self.x,
     y = self.y,
   }

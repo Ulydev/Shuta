@@ -19,8 +19,7 @@ end
 
 function scene.draw()
 
-    love.graphics.setColor( lue:getColor("back") )
-    love.graphics.rectangle("fill", 0, 0, WWIDTH, WHEIGHT)
+    push:setCanvas("ui")
 
     love.graphics.setColor( lue:getColor("main") )
 

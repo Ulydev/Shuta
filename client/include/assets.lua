@@ -1,38 +1,22 @@
-local Assets = {}
-Assets.__index = Assets
+local function _fonts(p)
+    local _style = "bold"
 
-Assets.path = "assets/"
-local p = Assets.path
-
-function Assets.load()
-    Assets.fonts = Assets.loadFonts()
-    Assets.images = Assets.loadImages()
-    Assets.sounds = Assets.loadSounds()
-    Assets.shaders = Assets.loadShaders()
+    return {
+        light = {
+            small = love.graphics.newFont(p .. "fonts/uni".._style..".ttf", 36),
+            medium = love.graphics.newFont(p .. "fonts/uni".._style..".ttf", 48),
+            big = love.graphics.newFont(p .. "fonts/uni".._style..".ttf", 64),
+        },
+        bold = {
+            small = love.graphics.newFont(p .. "fonts/unibold.ttf", 36),
+            medium = love.graphics.newFont(p .. "fonts/unibold.ttf", 48),
+            big = love.graphics.newFont(p .. "fonts/unibold.ttf", 64),
+        },
+        title = love.graphics.newFont(p .. "fonts/unibold.ttf", 128)
+    }
 end
 
-function Assets.loadFonts()
-    local fonts = {}
-
-    fonts.light = {
-        small = love.graphics.newFont(p .. "fonts/unilight.ttf", 36),
-        medium = love.graphics.newFont(p .. "fonts/unilight.ttf", 48),
-        big = love.graphics.newFont(p .. "fonts/unilight.ttf", 64),
-    }
-
-    fonts.bold = {
-        small = love.graphics.newFont(p .. "fonts/unibold.ttf", 36),
-        medium = love.graphics.newFont(p .. "fonts/unibold.ttf", 48),
-        big = love.graphics.newFont(p .. "fonts/unibold.ttf", 64),
-    }
-    
-    fonts.title = love.graphics.newFont(p .. "fonts/unibold.ttf", 128)
-
-    return fonts
-end
-
-function Assets.loadImages()
-    local images = {}
+local function _images(p)
 
     --trail
     local canvas = love.graphics.newCanvas(64, 64)
@@ -40,46 +24,86 @@ function Assets.loadImages()
     love.graphics.setColor(255, 255, 255)
     love.graphics.circle("fill", canvas:getWidth(), canvas:getHeight() * .5, canvas:getHeight() * .5)
     love.graphics.setCanvas()
-    images.trail = love.graphics.newImage( canvas:newImageData() )
 
-    --
-
-    return images
-end
-
-function Assets.loadSounds()
-    local sounds = { ui = {} }
-
-    sounds.ui.confirm1 = audio:newSource(p .. "sounds/ui/confirm1.wav", "static")
-    sounds.ui.confirm2 = audio:newSource(p .. "sounds/ui/confirm2.wav", "static")
-
-
-
-    return sounds
-end
-
-function Assets.loadShaders()
-    local shaders = {}
-
-    shaders.default = love.graphics.newShader(p .. "shaders/default.frag")
-
-    shaders.vignette = love.graphics.newShader(p .. "shaders/vignette.fsh")
-
-    shaders.values = {
-        vignette = soft:new(0):to(1)
+    return {
+        trail = love.graphics.newImage( canvas:newImageData() ),
+    
+        ui = {
+            editor = {
+                actions = {
+                    move = love.graphics.newImage(p .. "images/ui/editor/actions/move.png"),
+                    shoot = love.graphics.newImage(p .. "images/ui/editor/actions/shoot.png")
+                }
+            },
+            controls = {
+                mouseleft = love.graphics.newImage(p .. "images/ui/controls/mouseleft.png"),
+                mouseright = love.graphics.newImage(p .. "images/ui/controls/mouseright.png")
+            }
+        }
     }
+end
 
-    return shaders
+local function _sounds(p)
+    return {
+        ui = {
+            turn = {
+                confirm = audio:newSource(p .. "sounds/ui/turn/confirm.wav", "static"),
+                start = audio:newSource(p .. "sounds/ui/turn/start.wav", "static")
+            },
+            select = audio:newSource(p .. "sounds/ui/select.wav", "static"):setPitch(2),
+            confirm = audio:newSource(p .. "sounds/ui/confirm.wav", "static"):setPitch(1)
+        }
+    }
+end
+
+local function _shaders(p)
+    return {
+        screen = love.graphics.newShader(p .. "shaders/default.frag"),
+
+        vignette = love.graphics.newShader(p .. "shaders/vignette.frag"),
+
+        ghost = love.graphics.newShader(p .. "shaders/ghost.frag"),
+
+        values = {
+            vignette = soft:new(0):to(1)
+        }
+    }
 end
 
 --
 
-function Assets.update(dt)
+local Class = class('AssetManager')
+
+function Class:initialize()
+    
+    self.path = "assets/"
+
+    self.assets = {}
+
+end
+
+function Class:load()
+    --TODO:
+    self.assets = {
+        fonts = _fonts(self.path),
+        images = _images(self.path),
+        sounds = _sounds(self.path),
+        shaders = _shaders(self.path)
+    }
+end
+
+function Class:get(assetType)
+    return self.assets[assetType]
+end
+
+--
+
+function Class:update(dt)
 
     local cos = math.cos( love.timer.getTime() * 10 )
 
-    shaders.default:send("setting1", cos * .1 + 2)
-    shaders.default:send("setting2", cos * .2 + 100)
+    shaders.screen:send("setting1", cos * .1 + 2)
+    shaders.screen:send("setting2", cos * .2 + 100)
 
     shaders.vignette:send("setting", 1 + shaders.values.vignette:get() * -.3)
 
@@ -87,19 +111,25 @@ end
 
 --
 
-function Assets.setVolume(volume, table)
-    local table = table or sounds
+function Class:apply(table, f, ...)
+    local table = type(table) == "table" and table or self:get(table) --table can be a string
     for k, v in pairs(table) do
-        if v.volume then
-            v:setVolume(volume)
+        if v[f] then
+            v[f](v, ...)
         elseif type(v) == "table" then --keep searching
-            Assets.setVolume(volume, v)
+            self:apply(v, f, ...)
         end
     end
-    Assets.volume = volume
-end
-function Assets.getVolume(volume)
-    return Assets.volume
 end
 
-return Assets
+--volume
+function Class:setVolume(volume)
+    self.volume = volume
+    self:apply("sounds", "setVolume", volume)
+end
+function Class:getVolume(volume)
+    return self.volume
+end
+--
+
+return Class

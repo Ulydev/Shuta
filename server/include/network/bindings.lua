@@ -1,15 +1,13 @@
 local function leaveRoom(client)
-    local index = client:getIndex()
-
     local room = client.room
     if (room) then
         network:getRoom(room.id):removeClient(client)
-        server:sendToAllInRoom(room.id, "remoteDisconnect", { id = index })
+        server:sendToAllInRoom(room.id, "remoteDisconnect", { id = client.id })
 
         log("[#" .. room.id .. "] " .. client.toString() .. " left")
 
         if room:getState():filterObject(function(o)
-            return (o.class == "Character" and o.client:getIndex() == index)
+            return (o:isInstanceOf(Character) and o.client.id == client.id)
         end) then
             --client was playing, let's reset state and check for new game
             room:getState():reset()
@@ -31,7 +29,7 @@ local function addUtilLayer(server)
 
     function server:sendToAllInRoom(roomId, event, data)
         local clients = {}
-        for index, client in pairs( network:getRoom(roomId).clients ) do
+        for _, client in pairs( network:getRoom(roomId).clients ) do
             table.insert(clients, client)
         end
         return server:sendToClients(clients, event, data)
@@ -47,20 +45,21 @@ local function setConnectionCallbacks(server)
 
     --global
 
-    server:on("connect", function(data, client)
-        local index = client:getIndex()
+    server:on("connect", function(data, client, test)
+        print(data)
 
         local randname = ""
         for i = 1, math.random(6, 10) do
             randname = randname .. string.char( math.random(65, 90) )
         end
         client.toString = function() --quick, dirty hack
-            return "[" .. client.name .. "(" .. index .. ")]"
+            return "[" .. client.name .. "(" .. client.id .. ")]"
         end
 
         client.name = randname --TODO: let player choose their own name
+        client.id = client:getIndex() --TODO: proper client:init() method
 
-        client:send("init", { id = index, name = client.name })
+        client:send("init", { id = client.id, name = client.name })
 
         log(client.toString() .. " connected")
     end)
@@ -73,21 +72,19 @@ local function setConnectionCallbacks(server)
     --room
 
     server:on("joinRoom", function(roomId, client)
-        local index = client:getIndex()
-
         if not roomId then roomId = 2 end
         --^ TODO: quick play redirects to room #2 for now (fast-paced)
 
         local oldRoom = client.room
         if (oldRoom) then
             oldRoom:removeClient(client)
-            server:sendToAllInRoom(oldRoom.id, "remoteDisconnect", { id = index })
+            server:sendToAllInRoom(oldRoom.id, "remoteDisconnect", { id = client.id })
             --^ every client should already have a list of names
         end
 
         local room = network:getRoom(roomId)
 
-        server:sendToAllInRoom(roomId, "remoteConnect", { id = index, name = client.name }) --notify everyone of client connection
+        server:sendToAllInRoom(roomId, "remoteConnect", { id = client.id, name = client.name }) --notify everyone of client connection
         room:addClient(client) --add client to room
 
         --send client initial data
@@ -116,8 +113,6 @@ local function setDataCallbacks(server)
         local turnIndex = turn.id
         local turnData = turn.data
 
-        local index = client:getIndex()
-
         --store input
         local room = client.room
         if room and room:getState():hasStarted() then
@@ -125,7 +120,7 @@ local function setDataCallbacks(server)
 
             if turnIndex == room:getState():getTurns():getCurrentTurnIndex() then
                 added = room:getState():getTurns():addTurn(
-                    client:getIndex(),
+                    client.id,
                     Turn:new( turnData ),
                     false --don't force to prevent cheating
                 )
@@ -136,9 +131,7 @@ local function setDataCallbacks(server)
 
             if added and room:getState():getTurns():isReady() then --we got all turns!
                 
-                room:getState():getTurns():setTimer(0)
-                --broadcast on next frame
-                --TODO: might need improvement
+                room:getState():getTurns():setTimer(.5)
 
             end
 
@@ -149,7 +142,7 @@ local function setDataCallbacks(server)
     server:on("message", function(text, client)
         local room = client.room
         if room then
-            server:sendToAllInRoom(room.id, "message", { text = text, sender = client:getIndex() })
+            server:sendToAllInRoom(room.id, "message", { text = text, sender = client.id })
         end
     end)
 

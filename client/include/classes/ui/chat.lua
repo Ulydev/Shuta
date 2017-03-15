@@ -23,6 +23,9 @@ end
 
 function Class:draw()
 
+    love.graphics.push()
+    love.graphics.translate(40, -40)
+
     --TODO: fix that huge mess!!!
 
     local font = fonts.light.small --required for font:getWidth()
@@ -73,7 +76,7 @@ function Class:draw()
 
     --/input bar
 
-
+    love.graphics.pop()
 
 end
 
@@ -103,8 +106,9 @@ end
 --
 
 function Class:addInput(text)
-    self.input = self.input .. text
     self.blinkTime = 0
+    if string.len( self.input ) > 32 then return true end
+    self.input = self.input .. text
 end
 
 function Class:removeInput(length)

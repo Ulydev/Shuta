@@ -11,7 +11,7 @@ end
 --update
 
 function Class:update(dt)
-    self:getState():update(dt)
+    --
 end
 
 --clients

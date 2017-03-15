@@ -1,4 +1,4 @@
-version = "0.0.2"
+version = "0.0.3"
 client = true --required
 
 io.stdout:setvbuf('no') --fixes print issues
@@ -14,13 +14,15 @@ remote_debug = false --enables lovebird
 local_debug = false --connects to localhost
 nosound_debug = false --set volume to 0 from start
 nofx_debug = false --disable effects and improve performance
+small_debug = false --tiny window
 
-for i = 2, 6 do
+for i = 2, 7 do
   if arg[i] == "-debug" then debug = true end
   if arg[i] == "-remote" then remote_debug = true end
   if arg[i] == "-local" then local_debug = true end
   if arg[i] == "-nosound" then nosound_debug = true end
   if arg[i] == "-nofx" then nofx_debug = true end
+  if arg[i] == "-small" then small_debug = true end
 end
 
 --//////////////////////////////////--
@@ -63,6 +65,7 @@ bitser = shared               "lib/spec/bitser"
 NetworkManager = reqclass     "network.manager"
 Room = reqclass               "network.room"
 GameState = sharedclass       "gamestate"
+GameStateSimulation = reqclass "network.gamestatesimulation"
 
 network = NetworkManager:new()
 
@@ -73,7 +76,8 @@ Input = include               "input"
 shared                        "helpers"
 
 --Assets
-Assets = include              "assets"
+local AssetManager = include  "assets"
+assets = AssetManager:new()
 
 
 
@@ -92,9 +96,9 @@ Turn = sharedclass            "turn"
 Action = sharedclass          "action"
 
 --
-StateEngine = shared          "engine.state" --global engine
+BaseEngine = shared          "engine.engine" --global engine
 --
-SimplePhysicsEngine = shared  "engine.simplephysics" --inherits from StateEngine -> custom functions
+SimplePhysicsEngine = shared  "engine.simplephysics" --inherits from BaseEngine -> custom functions
 RadialPhysicsEngine = shared  "engine.radialphysics"
 
 --UI components
@@ -126,14 +130,15 @@ local windowWidth, windowHeight = love.window.getDesktopDimensions()
 if fullscreenMode then
   RWIDTH, RHEIGHT = windowWidth, windowHeight
 else
-  RWIDTH = windowWidth*.4 RHEIGHT = windowHeight*.4
+  local s = small_debug and .4 or .8
+  RWIDTH = windowWidth * s RHEIGHT = windowHeight * s
 end
 
 push:setupScreen(WWIDTH, WHEIGHT, RWIDTH, RHEIGHT, {
   fullscreen = fullscreenMode,
   resizable = not phoneMode,
   highdpi = true,
-  canvas = not nofx_debug
+  canvas = false --do not create canvas *yet*
 })
 
 fixed:setRate( 1 / 30 ):setFunction(function(dt) love.fixedupdate(dt) end) --30 fps
@@ -147,25 +152,33 @@ event = lem:new()
 function love.load()
 
   --load assets
-  Assets.load()
-  fonts, images, sounds, shaders = Assets.fonts, Assets.images, Assets.sounds, Assets.shaders
+  assets:load()
+  fonts, images, sounds, shaders = assets:get("fonts"), assets:get("images"), assets:get("sounds"), assets:get("shaders")
 
   if nosound_debug then
-    Assets.setVolume(0)
+    assets:setVolume(0)
   else
-    Assets.setVolume(.5)
+    assets:setVolume(.5)
+  end
+
+  --canvas & shaders
+  if not nofx_debug then
+    push:setupCanvas({
+      { name = "game" },
+      { name = "ui" }
+    })
+    push:setShader("game", shaders.vignette)
+    push:setShader(shaders.screen) --final shader
   end
 
   --colors
-  lue:setColor("main", { 200, 0, 0 })
+  lue:setColor("main", { 228, 0, 27 })
+  lue:setColor("mainalt", { 27, 0, 228 })
   lue:setColor("back", { 255, 255, 255 })
   lue:setColor("mid", { 100, 100, 100, 100 })
 
   --transitions
   ease:add("sin", "math.sin(x * math.pi / 2)")
-
-  --shaders
-  if not nofx_debug then push:setShader( shaders.vignette ) end
 
   --create client
   network.init = include        "network.init"
@@ -173,7 +186,7 @@ function love.load()
 
   client = network.init()
   network.bindings.init( client )
-  client:connect()
+  client:connect( { test = "ok" } )
   --/
   
   screen:setDimensions(push:getDimensions())
@@ -183,6 +196,7 @@ function love.load()
 end
 
 function love.update(dt)
+  dt = math.clamp(0, dt, 1/10) --no more than 10fps drop
   
   if remote_debug then lovebird.update() end
 
@@ -196,12 +210,9 @@ function love.update(dt)
   
   state:update(dt)
 
-  --fixed timestep
-  fixed:update(dt)
-
   --
 
-  Assets.update(dt)
+  assets:update(dt)
 
   network:update(dt)
   
@@ -217,6 +228,9 @@ function love.draw()
   
   push:apply("start")
   screen:apply()
+
+  love.graphics.setColor( lue:getColor("back") )
+  love.graphics.rectangle("fill", 0, 0, WWIDTH, WHEIGHT)
   
   state:draw()
   

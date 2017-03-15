@@ -17,7 +17,12 @@ end
 
 function Class:update(dt)
 
+    local _selected = self.selected
+
     self.selected = self:isHovered( love.mouse.getPosition() )
+    if self.selected and not _selected then
+        sounds.ui.select:play()
+    end
 
     self.scale = math.lerp(self.scale, self.selected and 1.6 or 1, .4)
 
@@ -46,6 +51,7 @@ function Class:isHovered(x, y)
 end
 
 function Class:click()
+    sounds.ui.confirm:play()
     return self.action()
 end
 

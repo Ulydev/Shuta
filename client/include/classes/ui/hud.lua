@@ -35,7 +35,8 @@ function Class:draw()
     end
     --FIXME: please fix me later please please please
 
-
+    love.graphics.push()
+    love.graphics.translate(40, 40)
 
     love.graphics.setFont(fonts.bold.small)
     love.graphics.print("Players", 10, 10)
@@ -49,6 +50,8 @@ function Class:draw()
         love.graphics.setColor( lue:getColor("main", me and 255 or 100))
         love.graphics.print( name .. "(" .. client.id .. ")", 10, i * 40 + 20 )
     end
+
+    love.graphics.pop()
 
     self.chat:draw()
 

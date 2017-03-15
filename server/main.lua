@@ -62,9 +62,9 @@ Planet = sharedclass                "planet"
 
 
 --
-StateEngine = shared                "engine.state" --global engine
+BaseEngine = shared                "engine.engine" --global engine
 --
-SimplePhysicsEngine = shared        "engine.simplephysics" --inherits from StateEngine -> custom functions
+SimplePhysicsEngine = shared        "engine.simplephysics" --inherits from BaseEngine -> custom functions
 RadialPhysicsEngine = shared        "engine.radialphysics"
 
 
@@ -131,13 +131,23 @@ function love.load()
         } }
     })
     network:createRoom({
-        name = "Physics (experimental)",
+        name = "Physics",
         settings = { turnTimer = 8, turnLength = 2.5 },
         engineType = "RadialPhysicsEngine",
+        map = { spots = spots, objects = {
+            Planet:new({ x = 0, y = 0, radius = 200 })
+        } }
+    })
+    --[[
+    network:createRoom({
+        name = "Soccer (experimental)",
+        settings = { turnTimer = 6, turnLength = 2.5 },
+        engineType = "FootballEngine",
         map = { spots = spots, objects = {
             Planet:new({ x = 0, y = 0, radius = 250 })
         } }
     })
+    --]]
     
   
 end

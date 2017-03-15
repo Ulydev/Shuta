@@ -25,7 +25,7 @@ function scene.load(params)
         text = room.name,
         x = WWIDTH*.5,
         y = WHEIGHT*.5 - 300 + 200 * (i-1),
-        width = 600,
+        width = 800,
         height = 160,
         font = fonts.light.big,
         action = function ()

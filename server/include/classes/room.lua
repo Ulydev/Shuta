@@ -28,7 +28,7 @@ function Class:getClientList()
     for i = 1, #self.clients do --Room.clients is sorted
         local client = self.clients[i]
         table.insert(clients, {
-            id = client:getIndex(),
+            id = client.id,
             name = client.name
         })
     end

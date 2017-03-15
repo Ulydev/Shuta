@@ -32,6 +32,10 @@ function Class:addTurn(id, turn, force)
     return false
 end
 
+function Class:getCurrentTurn()
+    return self:getTurn( self:getCurrentTurnIndex() )
+end
+
 function Class:getTurn(index)
     return self.turns[index]
 end
@@ -65,7 +69,7 @@ function Class:updateTimer(dt)
             --TODO: move code
             local room = self:getState():getRoom()
 
-            self:resetTimer( room:getSettings().turnLength + approxLag ) --.5 is approx lag
+            self:resetTimer( room:getSettings().turnLength + approxLag ) --approx lag
 
             --make sure everyone has a turn, even empty
             self:fillTurn()
@@ -116,10 +120,10 @@ end
 function Class:fillTurn(turnIndex)
     local turnIndex = turnIndex or self:getCurrentTurnIndex()
     local players = self:getState():filterObjects(function(o)
-        return (o.class == "Character")
+        return o:isInstanceOf(Character)
     end)
     for i = 1, #players do
-        local id = players[i].client.id or players[i].client:getIndex()
+        local id = players[i].client.id or players[i].client.id
         self:addTurn(
             id,
             Turn:new(),

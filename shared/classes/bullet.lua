@@ -18,7 +18,6 @@ function Class:initialize(args)
   end
 
   self.client = args.client
-  self.class = "Bullet"
   
 end
 
@@ -32,12 +31,6 @@ end
 function Class:draw(alpha)
   DynamicObject.draw(self, alpha)
 
-  love.graphics.setLineWidth(5)
-  love.graphics.setColor(lue:getColor("back"))
-  love.graphics.circle("fill", self.visual.x, self.visual.y, self.radius)
-  love.graphics.setColor(lue:getColor("main"))
-  love.graphics.circle("line", self.visual.x, self.visual.y, self.radius)
-  
 end
 
 --
@@ -46,7 +39,7 @@ function Class:serialize()
   return table.merge(
     DynamicObject.serialize(self),
     {
-      client = { id = self.client:getIndex() }
+      client = { id = self.client.id }
     }
   )
 end

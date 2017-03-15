@@ -6,8 +6,6 @@ function Class:initialize(args)
 
   self.width, self.height = args.width, args.height
   
-  self.class = "StaticObject"
-  
 end
 
 --CLIENT
