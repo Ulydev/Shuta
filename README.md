@@ -1,12 +1,20 @@
-# SUPERHOT
-SUPERHOT Contest
+# Shuta
 
-Client
+Experimental turn-based online shooter originally made for #makeitsuperhot jam.
+
+# Development flow
+
+Run client instance
 ```lua
-love client
+love client [-debug] [-remote] [-local] [-small] [-nofx] [-nosound]
 ```
 
-Server
+Run server instance
 ```lua
 love server
+```
+
+Build game
+```lua
+./build.sh
 ```

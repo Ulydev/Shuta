@@ -98,9 +98,6 @@ function Class:update(dt)
 end
 
 function Class:draw()
-    love.graphics.setColor(0, 0, 0)
-    love.graphics.print(self:getTurns():getCurrentTurnIndex(), 100, 100)
-
     love.graphics.setColor( lue:getColor("main", 100) )
     love.graphics.setLineWidth(15)
     love.graphics.circle("line", 0, 0, 750) --TODO: custom boundaries - default is 750

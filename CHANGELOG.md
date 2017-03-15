@@ -1,5 +1,6 @@
 --TODO:
 
+single-player mode (through AI?)
 added music
 improved chat
 added slowdown feedback at the end of each turn/game
