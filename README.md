@@ -5,16 +5,16 @@ Experimental turn-based online shooter originally made for #makeitsuperhot jam.
 # Development flow
 
 Run client instance
-```lua
+```bash
 love client [-debug] [-remote] [-local] [-small] [-nofx] [-nosound]
 ```
 
 Run server instance
-```lua
+```bash
 love server
 ```
 
-Build game
-```lua
+Build game (/build/release/)
+```bash
 ./build.sh
 ```
