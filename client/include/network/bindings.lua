@@ -102,8 +102,6 @@ local function setDataCallbacks(client)
             network:getRoom():getState():reset()
         end
 
-        pprint(stateData)
-
         print("Received game state")
 
         updateData( stateData )
@@ -112,8 +110,6 @@ local function setDataCallbacks(client)
     --
 
     client:on("turnList", function(turnList)
-
-        pprint(turnList)
 
         local room = network:getRoom()
         if room then

@@ -46,7 +46,6 @@ local function setConnectionCallbacks(server)
     --global
 
     server:on("connect", function(data, client, test)
-        print(data)
 
         local randname = ""
         for i = 1, math.random(6, 10) do

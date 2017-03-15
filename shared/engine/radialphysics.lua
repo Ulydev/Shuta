@@ -104,7 +104,6 @@ function Class:updateObject(dt, object)
     end
 
     if object.radius then
-        print(object.radius)
         local dist = math.sqrt(object.x^2 + object.y^2)
         local maxDist = 750 - object.radius
         if dist > maxDist then
